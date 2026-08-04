@@ -39,6 +39,12 @@ Publish `config/spoolrail.php` to configure the complete RabbitMQ connection:
 
 The Management URL may point to the server root or end in `/api`. It must use HTTP or HTTPS and cannot contain embedded credentials, a query string, or a fragment.
 
+## Message Properties
+
+The JSON envelope remains the portable source of message identity, type, payload, and millisecond publication time. RabbitMQ publications also project the logical message ID into AMQP `message_id`, the message type into AMQP `type`, and the publication time into AMQP `timestamp` so RabbitMQ tooling can display those values. AMQP timestamps have one-second resolution.
+
+These properties remain publisher-supplied projections. They do not populate the receive-side transport-assigned ID or publication-time fields, which are `null` for RabbitMQ. Portable publication headers use AMQP application headers and are available through the received message's transport context.
+
 ## Multiple Hosts
 
 Use `hosts` instead of `host` to try brokers in order while opening a connection:

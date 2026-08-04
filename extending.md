@@ -55,18 +55,29 @@ Custom drivers implement `Driver`:
 
 ```php
 use Closure;
+use Spoolrail\Spoolrail\TransportContext;
 
 interface Driver
 {
-    public function publish(string $topic, string $body): void;
+    /**
+     * @param array<string, string> $headers
+     */
+    public function publish(string $topic, string $body, array $headers): void;
 
+    /**
+     * @param Closure(string, TransportContext): void $handoff
+     */
     public function consume(string $subscription, Closure $handoff): void;
 }
 ```
 
-`publish` receives the selected topic and the encoded message body. Send the body unchanged and return only after the transport has accepted it. Throw when acceptance fails or remains unknown.
+`publish` receives the selected topic, the encoded message body, and a portable header map already validated by Spoolrail. Send the body unchanged, map the headers into the transport's native application-header facility, and return only after the transport has accepted the publication. Throw when acceptance fails or remains unknown.
 
-`consume` must retain ownership of a delivery while calling `$handoff($body)`. Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and surface the failure.
+`consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
+
+Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Do not place acknowledgement, receipt, or settlement handles in the context.
+
+Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and surface the failure.
 
 These rules preserve Spoolrail's at-least-once behavior across transports.
 
