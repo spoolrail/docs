@@ -13,16 +13,17 @@ $message = Message::make('order.created', [
 ]);
 ```
 
-Each message has four public values:
+Each message has five public values:
 
 ```php
 $message->id;          // UUID v7
 $message->type;        // "order.created"
 $message->payload;     // The supplied array
 $message->publishedAt; // null until published
+$message->transport;   // null until received from a transport
 ```
 
-Messages are immutable. Publishing returns a new instance with a millisecond-precision UTC `publishedAt` value; the original message remains unchanged.
+Messages are immutable. Publishing returns a new instance with a millisecond-precision UTC `publishedAt` value and no transport context; the original message remains unchanged.
 
 ## Publishing
 
@@ -47,6 +48,25 @@ A publisher does not declare or select subscriptions. Every subscription already
 
 Spoolrail publishes immediately, including inside a database transaction. A later rollback cannot retract the message. Publish after the transaction commits, and use a transactional outbox when the database change and publication must be atomic.
 
+## Publication Headers
+
+Pass portable string headers when a publication needs tracing or application metadata outside the logical message:
+
+```php
+$published = Spoolrail::publish(
+    'orders',
+    $message,
+    headers: [
+        'traceparent' => $traceparent,
+        'correlation-id' => (string) $order->id,
+    ],
+);
+```
+
+Use lowercase kebab-case keys and string values. Publications accept up to 10 headers, the AWS SNS-to-SQS portability limit.
+
+Headers belong to a publication, not to `Message`. They are not encoded in the JSON envelope or retained on the returned message. Publishing a received message does not automatically forward its received headers; pass the selected headers explicitly.
+
 ## Topic Names
 
 Topic names must contain between 3 and 251 ASCII characters, begin with a letter, and otherwise contain only letters, digits, hyphens, and underscores.
@@ -57,7 +77,7 @@ Valid names include `orders`, `order_events`, and `orders-v2`. Dotted values suc
 
 Payloads must be JSON-encodable arrays. Spoolrail rejects values unsupported by `json_encode` before publishing.
 
-The encoded message may not exceed 262,144 bytes (256 KiB). `MessageTooLargeException` exposes the actual byte count and limit. Put large documents and binary data in durable storage and publish a reference instead.
+The complete publication, including headers, may not exceed 256 KiB. `MessageTooLargeException` exposes the actual byte count and limit. Put large documents and binary data in durable storage and publish a reference instead.
 
 ## Message Identity
 
@@ -71,6 +91,29 @@ Spoolrail::publish('orders', $message); // Same message ID
 ```
 
 Consumers may treat the second publication as a duplicate during the configured deduplication window.
+
+## Transport Context
+
+A message received by a handler has an immutable `TransportContext` describing that delivery:
+
+```php
+$message->transport?->driver;
+$message->transport?->connectionName;
+$message->transport?->topic;
+$message->transport?->subscription;
+$message->transport?->headers;
+$message->transport?->transportMessageId;
+$message->transport?->transportPublishedAt;
+$message->transport?->redelivered;
+```
+
+`driver`, `connectionName`, `topic`, `subscription`, and `headers` are always present on received messages. `headers` is an `array<string, mixed>` containing the complete native header collection exposed by the transport, including transport-added values, or an empty array when the delivery has none. It can therefore contain more than 10 entries and values other than strings.
+
+`transportMessageId`, `transportPublishedAt`, and `redelivered` are nullable because a transport may not report those facts. A transport message ID is assigned by the transport and is distinct from the logical `$message->id`. A transport publication time is assigned by the transport and is distinct from the application-side `$message->publishedAt`. RabbitMQ and the Array driver report `null` for both transport-assigned fields. The Array driver and RabbitMQ report redelivery evidence when available.
+
+`redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel Queue attempts or establish whether the handler has already completed.
+
+Laravel Queue retries retain the context captured during the successful broker-to-Queue handoff. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.
 
 ## Publication Outcomes
 
