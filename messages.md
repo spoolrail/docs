@@ -49,11 +49,9 @@ Spoolrail publishes immediately, including inside a database transaction. A late
 
 ## Topic Names
 
-Topic names must contain at least three ASCII characters, begin with a letter, and otherwise contain only letters, digits, hyphens, and underscores.
+Topic names must contain between 3 and 251 ASCII characters, begin with a letter, and otherwise contain only letters, digits, hyphens, and underscores.
 
 Valid names include `orders`, `order_events`, and `orders-v2`. Dotted values such as `order.created` are suitable message types but are not valid topic names.
-
-RabbitMQ uses the topic as the exchange name, so it may not exceed 255 bytes.
 
 ## Payloads and Size
 

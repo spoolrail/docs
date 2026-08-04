@@ -24,9 +24,9 @@ Spoolrail::subscribe('orders', 'warehouse-orders', ReserveInventory::class);
 Spoolrail::subscribe('orders', 'analytics-orders', RecordOrderAnalytics::class);
 ```
 
-Subscription names follow the same character rules as [topic names](messages.md#topic-names) and must be unique across the application, including subscriptions on different connections.
+Subscription names follow the same character rules as [topic names](messages.md#topic-names), contain at most 50 characters, and must be unique across the application, including subscriptions on different connections.
 
-On RabbitMQ, the ownership prefix, separating hyphen, and subscription name together may not exceed 255 bytes.
+> The 50-character limit leaves enough room for the ownership prefix and `.fifo` suffix within AWS SQS's 80-character queue name limit.
 
 ## Writing a Handler
 

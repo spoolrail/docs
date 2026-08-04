@@ -22,7 +22,7 @@ Applications using RabbitMQ must also install its AMQP client:
 composer require php-amqplib/php-amqplib:^3.7.4
 ```
 
-Spoolrail works with its bundled defaults. Publish `config/spoolrail.php` when you need to change connection, TLS, or deduplication settings:
+Publish `config/spoolrail.php` when you need to change connection, TLS, or deduplication settings:
 
 ```bash
 php artisan vendor:publish --tag=spoolrail-config
@@ -54,17 +54,19 @@ See [RabbitMQ](rabbitmq.md) for multiple hosts, TLS, and topology management.
 
 ## Ownership Prefix
 
-`SPOOLRAIL_PREFIX` namespaces subscription queues owned by the application. Set it explicitly before the first production topology sync and keep it stable:
+`SPOOLRAIL_PREFIX` namespaces subscription queues owned by the application. Set it explicitly before consuming messages or managing subscriptions and keep it stable:
 
 ```dotenv
 SPOOLRAIL_PREFIX=warehouse-production
 ```
 
-Use a different prefix for every receiving application and environment sharing a RabbitMQ virtual host. Changing the prefix creates a new set of subscription queues and leaves the old queues in place.
+It is required when consuming messages or managing receive-side topology, but publisher-only applications do not need it.
 
-Reserve RabbitMQ queue names beginning with `{ownership-prefix}-` for Spoolrail. Undeclared-subscription cleanup treats every matching queue as application-owned and may delete it when no active subscription declares it.
+Choose a short value from the application's durable identity. It is recommended to keep the prefix independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must begin with an ASCII letter, contain only ASCII letters, digits, hyphens, and underscores, and contain at most 24 characters.
 
-The prefix must begin with an ASCII letter and may contain ASCII letters, digits, hyphens, and underscores.
+Use a different prefix for every receiving application sharing a transport scope. Give environments distinct prefixes only when they deliberately share that scope. Changing the prefix creates a new set of subscription resources and leaves the old resources in place.
+
+The ownership prefix is reserved for Spoolrail-managed subscription resources. Undeclared-subscription cleanup treats every resource in that namespace as application-owned and may delete it when no active subscription declares it.
 
 ## Multiple Connections
 
