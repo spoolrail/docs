@@ -46,7 +46,7 @@ $published = Spoolrail::connection('partner')->publish(
 
 A publisher does not declare or select subscriptions. Every subscription already bound to the topic receives its own copy.
 
-Spoolrail publishes immediately, including inside a database transaction. A later rollback cannot retract the message. Publish after the transaction commits, and use a transactional outbox when the database change and publication must be atomic.
+By default, Spoolrail publishes immediately, including inside a database transaction. You can enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic: the change and pending publication are committed together, or neither is.
 
 ## Publication Headers
 
@@ -115,9 +115,9 @@ $message->transport?->redelivered;
 
 Laravel Queue retries retain the context captured during the successful broker-to-Queue handoff. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.
 
-## Publication Outcomes
+## Direct Publication Outcomes
 
-The RabbitMQ driver publishes persistent messages and waits for broker confirmation. A successful call means RabbitMQ accepted the message; it does not prove that any subscription retained or handled it.
+With the outbox disabled, the RabbitMQ driver publishes persistent messages and waits for broker confirmation. A successful call means RabbitMQ accepted the message; it does not prove that any subscription retained or handled it.
 
 Spoolrail does not retry failed publications automatically. Catch `PublicationException` and choose a policy from its `outcome`:
 
@@ -138,4 +138,6 @@ try {
 }
 ```
 
-`NotSent` and `Rejected` establish that RabbitMQ did not accept the publication. `Unknown` means confirmation was lost after RabbitMQ may have accepted it. Retrying an `Unknown` outcome can produce another delivery, so reconcile it using your application's idempotency or outbox strategy instead of blindly publishing again.
+`NotSent` and `Rejected` establish that RabbitMQ did not accept the publication. `Unknown` means confirmation was lost after RabbitMQ may have accepted it. Retrying an `Unknown` outcome can produce another delivery, so reconcile it using your application's idempotency policy instead of blindly publishing again.
+
+When the transactional outbox is enabled, the publishing call stores the publication instead of contacting RabbitMQ. The dispatcher retains failed and uncertain attempts for later runs; see [Failure and Recovery](outbox.md#failure-and-recovery).

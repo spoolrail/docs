@@ -127,6 +127,7 @@ The returned message contains the UUID and UTC publication time that subscribers
 
 - [Installation and Configuration](installation.md)
 - [Publishing Messages](messages.md)
+- [Transactional Outbox](outbox.md)
 - [Subscriptions and Handlers](subscriptions.md)
 - [Running Consumers](consumers.md)
 - [RabbitMQ](rabbitmq.md)
