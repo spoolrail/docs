@@ -22,7 +22,7 @@ Applications using RabbitMQ must also install its AMQP client:
 composer require php-amqplib/php-amqplib:^3.7.4
 ```
 
-Publish `config/spoolrail.php` when you need to change connection, TLS, or deduplication settings:
+Publish `config/spoolrail.php` when you need to customize Spoolrail's settings:
 
 ```bash
 php artisan vendor:publish --tag=spoolrail-config
@@ -106,6 +106,10 @@ Changing a resolved connection's configuration at runtime does not rebuild it au
 Deduplication is enabled by default and uses the configured Laravel cache store. Production workers must share a cache store that supports atomic locks.
 
 See [Duplicate Handling](consumers.md#duplicate-handling) before changing `spoolrail.deduplication` settings.
+
+## Transactional Outbox
+
+Direct broker publication is the default. See [Transactional Outbox](outbox.md) when publications must commit atomically with database changes.
 
 ## Array Connection
 

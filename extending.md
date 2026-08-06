@@ -71,7 +71,11 @@ interface Driver
 }
 ```
 
-`publish` receives the selected topic, the encoded message body, and a portable header map already validated by Spoolrail. Send the body unchanged, map the headers into the transport's native application-header facility, and return only after the transport has accepted the publication. Throw when acceptance fails or remains unknown.
+`publish` receives the selected topic, the encoded message body, and a portable header map already validated by Spoolrail. Send the body unchanged, map the headers into the transport's native application-header facility, and return only after the transport has accepted the publication.
+
+Configure finite connection and publication timeouts in the driver. This operation must always terminate because the transactional outbox dispatcher invokes it synchronously and does not impose a transport-independent timeout.
+
+Throw `PublicationException::notSent(...)` when the publication failed before it could be sent, `PublicationException::rejected()` when the transport explicitly rejected it, and `PublicationException::outcomeUnknown(...)` when acceptance cannot be established. Preserve the transport failure as the supplied previous exception. The distinction determines whether callers know the message was not accepted or must account for a possible duplicate.
 
 `consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
 
