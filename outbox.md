@@ -85,7 +85,7 @@ The retained row records a short `last_error`, and its `updated_at` value shows 
 ```php
 'outbox' => [
     'enabled' => env('SPOOLRAIL_OUTBOX', false),
-    'connection' => env('SPOOLRAIL_OUTBOX_CONNECTION', null),
+    'connection' => env('SPOOLRAIL_OUTBOX_CONNECTION', env('DB_CONNECTION', 'sqlite')),
     'exception_cooldown' => 300,
 ],
 ```
