@@ -83,7 +83,7 @@ Set `transportMessageId` and `transportPublishedAt` only from values assigned by
 
 Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and surface the failure.
 
-These rules preserve Spoolrail's at-least-once behavior across transports.
+These rules keep the source delivery available whenever the Queue handoff does not return normally.
 
 ## Closing Connections
 

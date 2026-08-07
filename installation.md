@@ -101,12 +101,6 @@ Spoolrail::subscribe('orders', 'partner-orders', HandlePartnerOrder::class)
 
 Changing a resolved connection's configuration at runtime does not rebuild it automatically. Call `Spoolrail::forgetConnection('partner')` when a test or long-running process must reconnect with new settings.
 
-## Deduplication
-
-Deduplication is enabled by default and uses the configured Laravel cache store. Production workers must share a cache store that supports atomic locks.
-
-See [Duplicate Handling](consumers.md#duplicate-handling) before changing `spoolrail.deduplication` settings.
-
 ## Transactional Outbox
 
 Direct broker publication is the default. See [Transactional Outbox](outbox.md) when publications must commit atomically with database changes.

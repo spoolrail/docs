@@ -90,8 +90,6 @@ Spoolrail::publish('orders', $message);
 Spoolrail::publish('orders', $message); // Same message ID
 ```
 
-Consumers may treat the second publication as a duplicate during the configured deduplication window.
-
 ## Transport Context
 
 A message received by a handler has an immutable `TransportContext` describing that delivery:

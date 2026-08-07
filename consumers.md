@@ -50,36 +50,11 @@ Create an entry for every subscription, or generate equivalent processes with yo
 
 Consumers and Laravel queue workers are long-lived. Restart both after deploying subscription, handler, or configuration changes. Use `queue:restart` for Laravel workers and your process monitor for `spoolrail:consume`.
 
-## Duplicate Handling
+## Queue Handoff Idempotency
 
-A failure after Laravel Queue accepts work but before the broker records completion can place the same message on Laravel Queue more than once. Spoolrail suppresses repeated handling by subscription and message UUID.
+If Spoolrail completes its Laravel Queue handoff but the broker acknowledgement is lost, the broker may retry the delivery. Spoolrail recognizes the recent handoff and does not add another job.
 
-The default configuration is:
-
-```php
-'deduplication' => [
-    'enabled' => env('SPOOLRAIL_DEDUPLICATION', true),
-    'store' => env('SPOOLRAIL_DEDUPLICATION_STORE', env('CACHE_STORE', 'database')),
-    'remember' => 86400,
-    'lock' => 300,
-],
-```
-
-Choose a cache store that supports atomic locks and is shared by every worker that handles the subscription:
-
-```dotenv
-SPOOLRAIL_DEDUPLICATION_STORE=redis
-```
-
-Set `remember` long enough to cover the period in which a broker or queue retry can return. Set `lock` longer than the slowest legitimate handler execution. Spoolrail extends the lock to at least the handler's declared timeout plus a shutdown margin.
-
-Deduplication is bounded. A handler may run again after the remember period, after a cache flush, or when a worker crashes after performing its side effect but before completion is recorded. Domain changes that must happen once still need an application-owned idempotency key.
-
-Disable deduplication only when every handler already provides that boundary or every delivery must be handled:
-
-```dotenv
-SPOOLRAIL_DEDUPLICATION=false
-```
+Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. It's recommended to use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
 
 ## Database Queue Transactions
 

@@ -58,8 +58,6 @@ class ReserveInventory implements MessageHandler
 }
 ```
 
-Use the message UUID as an idempotency key when the handler performs a side effect that must not repeat.
-
 ## Choosing the Transport and Queue
 
 A subscription can select its Spoolrail connection, Laravel Queue connection, and Laravel queue independently:

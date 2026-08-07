@@ -4,8 +4,6 @@ Spoolrail lets Laravel applications exchange messages through a broker without g
 
 A publisher sends a `Message` to a topic. Every subscription to that topic gets its own copy. A `spoolrail:consume` process moves each copy onto the Laravel Queue selected by the subscription, and a Laravel queue worker runs the handler. In production, you normally run both processes.
 
-Handlers may receive the same message more than once. Spoolrail suppresses duplicates within a configurable window by default, but handlers that perform non-repeatable side effects must still be idempotent.
-
 ## Quick Start
 
 This walkthrough assumes your Laravel application can reach a RabbitMQ server with the Management plugin enabled. See [Installation and Configuration](installation.md) for supported versions, TLS, and advanced connection settings.
