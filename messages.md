@@ -136,6 +136,6 @@ try {
 }
 ```
 
-`NotSent` and `Rejected` establish that RabbitMQ did not accept the publication. `Unknown` means confirmation was lost after RabbitMQ may have accepted it. Retrying an `Unknown` outcome can produce another delivery, so reconcile it using your application's idempotency policy instead of blindly publishing again.
+`NotSent` and `Rejected` establish that RabbitMQ did not accept the publication. `Unknown` means confirmation was lost after RabbitMQ may have accepted it.
 
 When the transactional outbox is enabled, the publishing call stores the publication instead of contacting RabbitMQ. The dispatcher retains failed and uncertain attempts for later runs; see [Failure and Recovery](outbox.md#failure-and-recovery).
