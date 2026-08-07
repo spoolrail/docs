@@ -117,6 +117,38 @@ Spoolrail supports `tries`, `backoff`, `maxExceptions`, `timeout`, and `failOnTi
 
 Prefer methods when attempts or backoff are dynamic. Spoolrail captures Queue policy and middleware when it hands the message to Laravel Queue, before the handler constructor runs. Changes apply only to messages handed off afterward; existing queued jobs keep their captured policy.
 
+## Handling Terminal Failures
+
+A handler may define a `failed` method for message-specific cleanup or reporting. Spoolrail calls this method once after the queue marks the handler's job as failed. This works similarly to Laravel's queued jobs and listeners.
+
+```php
+use Spoolrail\Spoolrail\Message;
+use Throwable;
+
+public function failed(Message $message, ?Throwable $exception): void
+{
+    // ...
+}
+```
+
+> A new instance of the handler is instantiated before invoking the `failed` method; therefore, any class property modifications that may have occurred within the `handle` method will be lost.
+
+You can also register a `Queue::failing` callback in service provider for application-wide failure reporting:
+
+```php
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Support\Facades\Queue;
+use Spoolrail\Spoolrail\Jobs\HandleMessageJob;
+
+Queue::failing(function (JobFailed $event): void {
+    if ($event->job->resolveQueuedJobClass() !== HandleMessageJob::class) {
+        return;
+    }
+
+    // Handle event...
+});
+```
+
 ## Adding or Removing a Subscription
 
 To add a subscription:

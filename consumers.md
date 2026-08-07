@@ -20,9 +20,9 @@ The worker's connection and queue must match `onQueueConnection` and `onQueue`. 
 
 With an asynchronous Laravel Queue connection, a successful Queue push completes the broker delivery. Handler exceptions are then retried and recorded as failed jobs by Laravel Queue; they do not cause RabbitMQ to send the original delivery again.
 
-Listen for Laravel's `JobFailed` event when the application needs a terminal-failure hook.
+Use the handler's [`failed` callback](subscriptions.md#handling-terminal-failures) for message-specific failure handling, or Laravel's `JobFailed` event for application-wide failure reporting.
 
-With Laravel's `sync` Queue connection, the handler runs before the broker delivery completes. A handler exception leaves the message available for another consume attempt.
+With Laravel's `sync` Queue connection, the Queue push executes the handler inline. Spoolrail completes the broker delivery only after the handler returns normally. If it throws, the delivery remains available and may be handled again on a later consume attempt, so the failure callback may potentially run more than once for the same message.
 
 Use an asynchronous Laravel Queue for long-running handlers. With RabbitMQ and the `sync` Queue, handler execution prevents the AMQP client from servicing heartbeats until the handler returns. If the negotiated heartbeat or broker consumer acknowledgement timeout is exceeded, RabbitMQ may close the connection and deliver the message again.
 
