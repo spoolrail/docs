@@ -54,7 +54,7 @@ The outbox record commits and rolls back with that transaction. If you configure
 Run pending publications with:
 
 ```bash
-php artisan spoolrail:outbox:publish
+php artisan spoolrail:publish
 ```
 
 Schedule the finite command at the latency your application needs. A low-latency definition in `routes/console.php` can run every second:
@@ -62,7 +62,7 @@ Schedule the finite command at the latency your application needs. A low-latency
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('spoolrail:outbox:publish')
+Schedule::command('spoolrail:publish')
     ->everySecond()
     ->runInBackground()
     ->withoutOverlapping();
