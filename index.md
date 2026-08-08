@@ -2,7 +2,7 @@
 
 Spoolrail lets Laravel applications exchange messages through a broker without giving up Laravel Queue for background work.
 
-A publisher sends a `Message` to a topic. Every subscription to that topic gets its own copy. A `spoolrail:consume` process moves each copy onto the Laravel Queue selected by the subscription, and a Laravel queue worker runs the handler. In production, you normally run both processes.
+A publisher sends a `Message` to a topic. Every subscription to that topic gets its own copy. The long-running `php artisan spoolrail` command hands each copy to the Laravel Queue selected by the subscription, where the message handler runs.
 
 ## Quick Start
 
@@ -93,17 +93,13 @@ Run this command during deployment whenever subscription declarations change.
 
 ### 6. Start the Workers
 
-Run the subscription consumer:
+Run consumers for every subscription on the default Spoolrail connection:
 
 ```bash
-php artisan spoolrail:consume warehouse-orders
+php artisan spoolrail
 ```
 
-Run a Laravel queue worker in another process:
-
-```bash
-php artisan queue:work
-```
+Make sure Laravel Queue workers are running for the connections and queues selected by your subscriptions.
 
 ### 7. Publish a Message
 

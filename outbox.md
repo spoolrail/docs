@@ -74,7 +74,7 @@ Schedule::command('spoolrail:outbox:publish')
 
 Each invocation works through the rows visible when it starts and then exits. Rows committed during the run wait for the next invocation.
 
-When PHP PCNTL signal handling is available, `SIGINT`, `SIGTERM`, or `SIGQUIT` lets the command finish the publication already in progress and exit before starting another.
+`SIGINT`, `SIGTERM`, or `SIGQUIT` lets the command finish the publication already in progress and exit before starting another.
 
 ## Failure and Recovery
 
@@ -92,7 +92,7 @@ The retained row records a short `last_error`, and its `updated_at` value shows 
 ],
 ```
 
-The rate limit uses Laravel's default cache store. Cache failure allows the exception report rather than suppressing it. A later successful attempt deletes the row and writes a recovery message at `notice` level.
+A later successful attempt deletes the row and writes a recovery message at `notice` level.
 
 Spoolrail does not discard a publication after a fixed number of attempts. Persistent failures remain visible and keep their connection-and-topic lane blocked until the underlying problem is corrected.
 

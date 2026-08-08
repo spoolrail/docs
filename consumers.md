@@ -1,60 +1,101 @@
 # Running Consumers
 
-## Starting a Subscription Consumer
+## Starting Consumers
 
-Run one consumer for each active subscription:
-
-```bash
-php artisan spoolrail:consume warehouse-orders
-```
-
-The consumer places messages on the Laravel Queue selected by the subscription. If that connection is asynchronous, run a Laravel queue worker as well:
+Run every active subscription on the default Spoolrail connection with one command:
 
 ```bash
-php artisan queue:work redis --queue=broker-priority
+php artisan spoolrail
 ```
 
-The worker's connection and queue must match `onQueueConnection` and `onQueue`. RabbitMQ subscriptions may be processed by multiple `spoolrail:consume` processes when you need more throughput.
+Select another configured Spoolrail connection with `--connection`:
 
-## Handler Failures
+```bash
+php artisan spoolrail --connection=events
+```
 
-With an asynchronous Laravel Queue connection, a successful Queue push completes the broker delivery. Handler exceptions are then retried and recorded as failed jobs by Laravel Queue; they do not cause RabbitMQ to send the original delivery again.
+Use a separate root command for each connection that the application consumes. To run one declared subscription through the same production runtime, pass its name:
 
-Use the handler's [`failed` callback](subscriptions.md#handling-terminal-failures) for message-specific failure handling, or Laravel's `JobFailed` event for application-wide failure reporting.
+```bash
+php artisan spoolrail warehouse-orders
+```
 
-With Laravel's `sync` Queue connection, the Queue push executes the handler inline. Spoolrail completes the broker delivery only after the handler returns normally. If it throws, the delivery remains available and may be handled again on a later consume attempt, so the failure callback may potentially run more than once for the same message.
+Spoolrail hands each delivery to the subscription's configured Laravel Queue, where the message handler runs.
 
-Use an asynchronous Laravel Queue for long-running handlers. With RabbitMQ and the `sync` Queue, handler execution prevents the AMQP client from servicing heartbeats until the handler returns. If the negotiated heartbeat or broker consumer acknowledgement timeout is exceeded, RabbitMQ may close the connection and deliver the message again.
+## Subscription Recovery
 
-If a consumer loses its broker connection or cannot hand a message to Laravel Queue, it exits with an error and the message remains available. Run consumers under a process monitor so they restart.
+If one subscription stops consuming unexpectedly, the others continue. Spoolrail restarts the affected subscription after 1, 5, 15, 30, then 60 seconds, and uses 60-second delays for further restarts. After the subscription has remained active for 60 seconds, the delay sequence resets and Spoolrail writes a recovery message at `notice` level, even if no messages arrived during that time.
 
-## Process Management
+Spoolrail reports subscription failures through Laravel's exception handler, including the original cause. Each subscription failure category is reported at most once every five minutes by default. Applications can change the cooldown in `config/spoolrail.php`:
 
-A minimal Supervisor entry for one subscription may look like:
+```php
+'consumer' => [
+    'exception_cooldown' => 300,
+],
+```
+
+## Deploying Consumers
+
+Spoolrail consumers are long-lived and must restart after application code, declarations, or configuration change. After activating a new release on a server, run:
+
+```bash
+php artisan spoolrail:terminate
+```
+
+The command requests termination for every Spoolrail consumer on that server and returns immediately. The configured process monitor then starts them from the active release. Run the command on each server during a rolling deployment.
+
+`spoolrail:terminate` uses Laravel's default cache to reach running consumers. The deployment command and running consumers must use the same cache store and prefix so the termination request reaches them.
+
+If a deployment changes the default cache store, prefix, or backing location, restart the existing consumers through the process monitor instead.
+
+## Installing Supervisor
+
+Supervisor monitors the long-lived root command and starts it again whenever it exits. On Ubuntu, install it with:
+
+```bash
+sudo apt-get install supervisor
+```
+
+Other operating systems may provide Supervisor through their own package manager.
+
+## Supervisor Configuration
+
+Supervisor configuration files are typically stored in `/etc/supervisor/conf.d`. Create `/etc/supervisor/conf.d/spoolrail.conf` to start and monitor the default Spoolrail connection:
 
 ```ini
-[program:spoolrail-warehouse-orders]
-command=php /var/www/example.com/artisan spoolrail:consume warehouse-orders
-directory=/var/www/example.com
-user=forge
+[program:spoolrail]
+process_name=%(program_name)s
+command=php /home/forge/example.com/artisan spoolrail
 autostart=true
 autorestart=true
-stopasgroup=true
-killasgroup=true
+user=forge
 redirect_stderr=true
-stdout_logfile=/var/log/supervisor/spoolrail-warehouse-orders.log
-stopwaitsecs=3600
+stdout_logfile=/home/forge/example.com/spoolrail.log
+stopwaitsecs=30
+killasgroup=true
 ```
 
-Create an entry for every subscription, or generate equivalent processes with your deployment platform.
+The Artisan path must point to the active release.
 
-Consumers and Laravel queue workers are long-lived. Restart both after deploying subscription, handler, or configuration changes. Use `queue:restart` for Laravel workers and your process monitor for `spoolrail:consume`.
+## Starting Supervisor
+
+After creating the configuration file, update Supervisor and start the process:
+
+```bash
+sudo supervisorctl reread
+
+sudo supervisorctl update
+
+sudo supervisorctl start spoolrail
+```
+
+These are initial provisioning commands. Ordinary deployments use only `php artisan spoolrail:terminate` after the active release changes.
 
 ## Queue Handoff Idempotency
 
 If Spoolrail completes its Laravel Queue handoff but the broker acknowledgement is lost, the broker may retry the delivery. Spoolrail recognizes the recent handoff and does not add another job.
 
-Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. It's recommended to use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
+Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. Use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
 
 ## Database Queue Transactions
 
