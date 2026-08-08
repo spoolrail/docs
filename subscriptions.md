@@ -75,6 +75,12 @@ Spoolrail::subscribe('orders', 'priority-orders', HandlePriorityOrder::class)
 
 Omitted values use the corresponding application defaults.
 
+### Using the Sync Queue Connection
+
+With Laravel's `sync` Queue connection, Spoolrail runs the handler before telling the broker that the delivery is complete. If the handler throws or consumption is interrupted first, Spoolrail does not acknowledge the delivery, so the broker may deliver the same message again.
+
+Prefer an asynchronous Queue connection in production. Spoolrail can acknowledge the broker delivery as soon as Laravel Queue accepts the message, while Laravel Queue takes responsibility for running the handler and managing retries, timeouts, concurrency, and terminal failures.
+
 ## Queue Attempts, Timeouts, and Middleware
 
 Declare Laravel Queue behavior on the handler:
@@ -149,25 +155,15 @@ Queue::failing(function (JobFailed $event): void {
 });
 ```
 
-## Adding or Removing a Subscription
-
-To add a subscription:
-
-1. deploy its handler and declaration;
-2. run `php artisan spoolrail:sync`; and
-3. start its `spoolrail:consume` process.
-
-To remove one:
-
-1. stop its consumer;
-2. remove its declaration and deploy; and
-3. delete the old RabbitMQ queue only after its remaining messages are no longer needed.
-
-See [Removing Subscriptions](rabbitmq.md#removing-subscriptions) for the cleanup command.
-
 ## Moving a Subscription
 
-Changing a subscription's topic or Spoolrail connection does not update its existing RabbitMQ queue. To preserve messages, deploy a replacement under a new subscription name, run `spoolrail:sync`, start its consumer, move publishers when the topic changes, and keep the old declaration and consumer until its RabbitMQ queue drains. Then remove the old declaration and clean up its queue on the connection that owns it. If Laravel jobs can still run under the old name, replace the old declaration with the rename mapping below when retiring its RabbitMQ queue.
+A RabbitMQ subscription queue remains on the connection and topic where it was created. To move a subscription without losing messages, replace it in stages:
+
+1. Add a replacement subscription with a new name and the desired topic and Spoolrail connection. Keep the original subscription declared.
+2. Update publishers to use the replacement's topic and Spoolrail connection.
+3. Keep the original subscription running until its RabbitMQ queue is empty.
+4. Remove the original declaration. If Laravel Queue may still contain jobs for its name, add the mapping described in [Renaming a Subscription](#renaming-a-subscription) to the replacement at the same time.
+5. [Remove the original RabbitMQ queue](rabbitmq.md#removing-subscriptions) from its original connection.
 
 ## Renaming a Subscription
 

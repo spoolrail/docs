@@ -14,7 +14,7 @@ config([
 
 Declare subscriptions before publishing. Publish and consume in the same test process; a separate `php artisan` process cannot see the in-memory messages.
 
-On the array connection, `spoolrail:consume` returns after it drains the subscription's buffered messages.
+On the array connection, `spoolrail` with an explicit subscription returns after it drains that subscription's buffered messages. All-subscription supervision is unavailable because a clean child process cannot observe messages buffered in the test process.
 
 ## Testing a Handler
 
@@ -48,7 +48,7 @@ test('reserves inventory for an order message', function (): void {
         ]),
     );
 
-    $this->artisan('spoolrail:consume', [
+    $this->artisan('spoolrail', [
         'subscription' => 'warehouse-orders',
     ])->assertSuccessful();
 });
@@ -61,7 +61,7 @@ Call `Spoolrail::forgetConnection()` after changing connection configuration if 
 When a subscription uses an asynchronous Queue connection:
 
 1. publish through the array Spoolrail connection;
-2. run `spoolrail:consume`;
+2. run `spoolrail` with the subscription name;
 3. run a Laravel queue worker for the selected connection and queue; and
 4. assert the handler's domain effect.
 

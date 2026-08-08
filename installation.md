@@ -2,9 +2,9 @@
 
 ## Requirements
 
-Spoolrail requires PHP 8.4 or later, Laravel 12 or 13, and a configured Laravel Queue connection.
+Spoolrail requires PHP 8.4 or later with the PCNTL extension, Laravel 12 or later, and a configured Laravel Queue connection.
 
-The RabbitMQ driver requires RabbitMQ 4.3 or later and `php-amqplib/php-amqplib` 3.7.4 or later. Topology commands also require the RabbitMQ Management plugin and HTTP API.
+The RabbitMQ driver requires RabbitMQ 4.3 or later and `php-amqplib/php-amqplib` 3.7.4 or later. Topology commands also require the RabbitMQ Management plugin and access to its HTTP API.
 
 ## Installation
 
