@@ -65,4 +65,4 @@ When a subscription uses an asynchronous Queue connection:
 3. run a Laravel queue worker for the selected connection and queue; and
 4. assert the handler's domain effect.
 
-Use RabbitMQ integration tests when the behavior under test depends on broker confirmation, prefetch, acknowledgements, topology, or Management API permissions.
+Use transport-backed integration tests when behavior depends on native acceptance, delivery, settlement, or topology. For AWS SNS/SQS tests, point a test connection at a local AWS-compatible endpoint such as MiniStack.

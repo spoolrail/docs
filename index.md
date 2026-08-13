@@ -125,5 +125,6 @@ The returned message contains the UUID and UTC publication time that subscribers
 - [Subscriptions and Handlers](subscriptions.md)
 - [Running Consumers](consumers.md)
 - [RabbitMQ](rabbitmq.md)
+- [AWS SNS/SQS](aws.md)
 - [Testing](testing.md)
 - [Custom Drivers](extending.md)
