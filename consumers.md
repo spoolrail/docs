@@ -22,6 +22,16 @@ php artisan spoolrail warehouse-orders
 
 Spoolrail hands each delivery to the subscription's configured Laravel Queue, where the message handler runs.
 
+## Message Delivery
+
+Spoolrail considers a broker delivery complete only after the selected Laravel Queue accepts it. If the Queue handoff fails or the consumer stops first, the message remains unacknowledged and the broker will redeliver it.
+
+If an acknowledgment does not reach the broker, the broker will technically redeliver the message. However, Spoolrail deduplicates that redelivery before handing it to Laravel Queue, so that redelivery does not add a second Laravel job. This deduplication covers recent repeats of the same broker-to-Queue handoff; it does not add an exactly-once delivery guarantee to brokers that do not already provide one.
+
+Once Laravel Queue accepts the message, Laravel Queue owns handler execution, retries, timeouts, and terminal failure.
+
+Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. Use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
+
 ## Subscription Recovery
 
 If one subscription stops consuming unexpectedly, the others continue. Spoolrail restarts the affected subscription after 1, 5, 15, 30, then 60 seconds, and uses 60-second delays for further restarts. After the subscription has remained active for 60 seconds, the delay sequence resets and Spoolrail writes a recovery message at `notice` level, even if no messages arrived during that time.
@@ -90,12 +100,6 @@ sudo supervisorctl start spoolrail
 ```
 
 These are initial provisioning commands. Ordinary deployments use only `php artisan spoolrail:terminate` after the active release changes.
-
-## Queue Handoff Idempotency
-
-If Spoolrail completes its Laravel Queue handoff but the broker acknowledgement is lost, the broker may retry the delivery. Spoolrail recognizes the recent handoff and does not add another job.
-
-Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. Use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
 
 ## Database Queue Transactions
 

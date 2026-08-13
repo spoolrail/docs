@@ -78,7 +78,7 @@ Each invocation works through the rows visible when it starts and then exits. Ro
 
 ## Failure and Recovery
 
-A failed or uncertain publication remains in the outbox and is retried on the next scheduled run. Scheduler cadence is retry cadence.
+Spoolrail applies its bounded publication retries during each dispatcher run. If those retries are exhausted, the publication remains in the outbox for the next scheduled run.
 
 Within each broker connection and topic, pending publications are handled oldest first. A failing row blocks later rows for that same connection and topic, while unrelated topics and connections continue. The command exits non-zero if any attempted publication fails or has an uncertain outcome.
 

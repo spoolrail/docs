@@ -40,7 +40,7 @@ php artisan spoolrail:sync
 
 Spoolrail inspects every referenced managed connection before applying any changes, so an inspection failure changes nothing. A successful synchronization creates missing compatible resources and relationships, but does not convert, replace, or delete existing resources.
 
-Resource creation is not transactional. If a broker, service, or network failure interrupts synchronization, correct the failure and rerun the command; compatible resources already created are reused.
+Resource creation is not transactional. Spoolrail automatically retries short-lived service and rate-limit failures. After a partially applied attempt, both automatic recovery and a later `spoolrail:sync` run read current broker state and apply only what remains.
 
 A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
 

@@ -82,6 +82,8 @@ Configure finite connection and publication timeouts in the driver. This operati
 
 Throw `PublicationException::notSent(...)` when the publication failed before it could be sent, `PublicationException::rejected(...)` when the transport explicitly rejected it, and `PublicationException::outcomeUnknown(...)` when acceptance cannot be established. Preserve the transport failure as the supplied previous exception.
 
+Each `publish` call is one broker attempt. Spoolrail applies `spoolrail.publisher_retries` above the driver and does not retry a `Rejected` outcome.
+
 `consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
 
 Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Set `orderingKey` from the delivery's native group identifier when available; otherwise use `null`. Do not place acknowledgement, receipt, or settlement handles in the context.
@@ -149,3 +151,5 @@ class AcmeTopologyPlan implements TopologyPlan
 ```
 
 The `apply` method should perform only the creations established during `planSync`.
+
+If discovery encounters a short-lived service or rate-limit failure, or an apply request may have succeeded before failing, throw `TopologySyncRequiresRetryException::afterFailure($exception)`. Spoolrail will wait one second, discard the remaining plan, inspect every connection again, and retry synchronization once. Report permanent refusals and incompatible topology without this exception.
