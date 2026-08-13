@@ -35,7 +35,7 @@ Publish `config/spoolrail.php` to configure the complete RabbitMQ connection:
 ],
 ```
 
-`connection_timeout` and `heartbeat` control AMQP connections. `prefetch` limits the unacknowledged messages held by each consumer. `publisher_confirm_timeout` controls how long publishing waits before reporting an unknown outcome.
+`connection_timeout` and `heartbeat` control AMQP connections. `prefetch` limits the unacknowledged messages held by each consumer. `publisher_confirm_timeout` controls how long each publication attempt waits for broker confirmation.
 
 The Management URL may point to the server root or end in `/api`. It must use HTTP or HTTPS and cannot contain embedded credentials, a query string, or a fragment.
 
@@ -56,7 +56,7 @@ Use `hosts` instead of `host` to try brokers in order while opening a connection
 ],
 ```
 
-Do not configure both keys. Spoolrail does not fail a publication over to another host after sending may have begun because the first broker may already have accepted it.
+Do not configure both keys, and list only nodes from the same RabbitMQ cluster. A publication retry may reconnect through the next host after an earlier attempt was not confirmed.
 
 ## TLS
 

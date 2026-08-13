@@ -46,7 +46,17 @@ $published = Spoolrail::connection('partner')->publish(
 
 A publisher does not declare or select subscriptions. Every subscription already bound to the topic receives its own copy.
 
-By default, Spoolrail publishes immediately, including inside a database transaction. You can enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic: the change and pending publication are committed together, or neither is.
+By default, Spoolrail publishes immediately, including inside a database transaction. You can enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic. With the outbox enabled, the publishing call stores the publication without contacting the broker, so the change and pending publication are committed together, or neither is. A separate outbox dispatcher process publishes pending publications to the broker.
+
+## Publication Retries
+
+By default, Spoolrail retries broker publication failures up to two times, waiting one second between attempts, unless the broker rejects the publication for a permanent reason.
+
+In the rare case where the broker accepts the message but its response does not reach Spoolrail due to a transient failure, a retry can publish the same message again. Spoolrail [deduplicates recent repeats during Queue handoff](consumers.md#message-delivery).
+
+Retries can extend how long direct publishing waits during a broker failure. Configure them under `spoolrail.publisher_retries`.
+
+When the transactional outbox is enabled, the same retry behavior applies when the outbox dispatcher publishes the message. If those retries are exhausted, the publication remains pending for a later scheduled run.
 
 ## Publication Headers
 
@@ -137,30 +147,3 @@ $message->transport?->orderingKey;
 `redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel Queue attempts or establish whether the handler has already completed.
 
 Laravel Queue retries retain the context captured during the successful broker-to-Queue handoff. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.
-
-## Direct Publication Outcomes
-
-With the outbox disabled, a successful publishing call means the selected transport accepted the message. It does not prove that any subscription retained or handled it.
-
-Spoolrail does not retry failed publications automatically. Catch `PublicationException` and choose a policy from its `outcome`:
-
-```php
-use Spoolrail\Spoolrail\Enums\PublicationOutcome;
-use Spoolrail\Spoolrail\Exceptions\PublicationException;
-
-try {
-    $published = Spoolrail::publish('orders', $message);
-} catch (PublicationException $exception) {
-    $description = match ($exception->outcome) {
-        PublicationOutcome::NotSent => 'The message was not sent.',
-        PublicationOutcome::Rejected => 'The transport rejected the message.',
-        PublicationOutcome::Unknown => 'The transport may have accepted the message.',
-    };
-
-    logger()->error($description, ['exception' => $exception]);
-}
-```
-
-`NotSent` and `Rejected` establish that the transport did not accept the publication. `Unknown` means acceptance could not be established after sending may have begun. Spoolrail does not automatically retry an unknown result because a second attempt could duplicate a message the transport already accepted.
-
-When the transactional outbox is enabled, the publishing call stores the publication instead of contacting the transport. Failed and uncertain publications remain pending for later attempts; see [Failure and Recovery](outbox.md#failure-and-recovery).
