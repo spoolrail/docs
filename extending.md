@@ -62,7 +62,12 @@ interface Driver
     /**
      * @param array<string, string> $headers
      */
-    public function publish(string $topic, string $body, array $headers): void;
+    public function publish(
+        string $topic,
+        string $body,
+        array $headers,
+        ?string $orderingKey = null,
+    ): void;
 
     /**
      * @param Closure(string, TransportContext): void $handoff
@@ -71,15 +76,15 @@ interface Driver
 }
 ```
 
-`publish` receives the selected topic, the encoded message body, and a portable header map already validated by Spoolrail. Send the body unchanged, map the headers into the transport's native application-header facility, and return only after the transport has accepted the publication.
+`publish` receives the selected topic, encoded message body, portable header map, and optional ordering key already validated by Spoolrail. Send the body unchanged, map headers into the transport's native application-header facility, and map the ordering key to the closest native grouping behavior. A driver whose topology has no meaningful grouping primitive may accept and ignore it. Return only after the transport has accepted the publication.
 
 Configure finite connection and publication timeouts in the driver. This operation must always terminate because the transactional outbox dispatcher invokes it synchronously and does not impose a transport-independent timeout.
 
-Throw `PublicationException::notSent(...)` when the publication failed before it could be sent, `PublicationException::rejected()` when the transport explicitly rejected it, and `PublicationException::outcomeUnknown(...)` when acceptance cannot be established. Preserve the transport failure as the supplied previous exception.
+Throw `PublicationException::notSent(...)` when the publication failed before it could be sent, `PublicationException::rejected(...)` when the transport explicitly rejected it, and `PublicationException::outcomeUnknown(...)` when acceptance cannot be established. Preserve the transport failure as the supplied previous exception.
 
 `consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
 
-Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Do not place acknowledgement, receipt, or settlement handles in the context.
+Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Set `orderingKey` from the delivery's native group identifier when available; otherwise use `null`. Do not place acknowledgement, receipt, or settlement handles in the context.
 
 Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and surface the failure.
 

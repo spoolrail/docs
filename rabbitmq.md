@@ -81,52 +81,12 @@ Configure Management API trust separately by replacing its `ca_file` value:
 'ca_file' => env('RABBITMQ_MANAGEMENT_CA_FILE'),
 ```
 
-## Synchronizing Topology
+## Managed Topology
 
-Subscription declarations are the source of RabbitMQ topology. Publishing and consuming do not create broker resources.
+After declaring subscriptions, run [topology synchronization](subscriptions.md#synchronizing-topology) with the Management API credentials configured for the connection. For each declaration, Spoolrail creates or verifies:
 
-Run the synchronization command after deploying declaration changes:
-
-```bash
-php artisan spoolrail:sync
-```
-
-Spoolrail checks every referenced connection before changing any of them. It creates missing compatible resources but does not alter, recreate, or delete existing resources.
-
-Preflight completes before any creation begins, but creation is not transactional. If a broker or network failure interrupts it, resolve the failure and rerun `spoolrail:sync`; existing compatible resources are reused.
-
-Each topic is a durable fanout exchange. Each subscription is a durable queue named `{ownership-prefix}-{subscription}`, with one binding from its topic.
+- a durable fanout exchange named `{topic}`;
+- a durable queue named `{ownership-prefix}-{subscription}`; and
+- a binding from the topic exchange to the subscription queue.
 
 RabbitMQ's virtual-host `default_queue_type` determines whether newly created subscription queues are classic or quorum. Both queue types are supported. Quorum queues must have unlimited delivery attempts. If synchronization reports an incompatible exchange, queue, binding, or delivery limit, correct that resource deliberately or choose a new logical name before running the command again.
-
-A publisher-only application cannot create a new topic. Synchronize at least one receiving application before enabling publication to that topic.
-
-## Removing Subscriptions
-
-Removing a declaration does not delete its queue. Until it is deleted, the undeclared queue remains bound to its topic and continues collecting copies of published messages. Once the queue is empty or its messages may be discarded, delete undeclared queues for one connection:
-
-```bash
-php artisan spoolrail:delete-undeclared-subscriptions --connection=rabbitmq
-```
-
-This command permanently deletes queues and their remaining messages. Pass `--connection` in deployment automation; without it, only the default connection is inspected.
-
-After changing an ownership prefix, delete all queues under the former prefix with:
-
-```bash
-php artisan spoolrail:delete-undeclared-subscriptions \
-    --connection=rabbitmq \
-    --retired-prefix=warehouse-staging
-```
-
-`--retired-prefix` deletes every subscription queue under that prefix, regardless of current declarations. The current prefix cannot be supplied as retired.
-
-## Deleting a Topic
-
-Delete an unused topic exchange with:
-
-```bash
-php artisan spoolrail:delete-topic orders --connection=rabbitmq
-```
-
-The command succeeds only when the exchange exists, matches Spoolrail's topic requirements, and has no bindings. It does not delete subscription queues.

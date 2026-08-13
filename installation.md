@@ -6,6 +6,8 @@ Spoolrail requires PHP 8.4 or later with the PCNTL extension, Laravel 12 or late
 
 The RabbitMQ driver requires RabbitMQ 4.3 or later and `php-amqplib/php-amqplib` 3.7.4 or later. Topology commands also require the RabbitMQ Management plugin and access to its HTTP API.
 
+The AWS SNS/SQS driver requires `aws/aws-sdk-php` 3.392.0 or later.
+
 ## Installation
 
 Install Spoolrail using Composer:
@@ -20,6 +22,12 @@ Applications using RabbitMQ must also install its AMQP client:
 
 ```bash
 composer require php-amqplib/php-amqplib:^3.7.4
+```
+
+Applications using AWS SNS/SQS must install the AWS SDK:
+
+```bash
+composer require aws/aws-sdk-php:^3.392.0
 ```
 
 Publish `config/spoolrail.php` when you need to customize Spoolrail's settings:
@@ -51,6 +59,20 @@ RABBITMQ_MANAGEMENT_PASSWORD=secret
 The AMQP credentials publish and consume messages. The Management credentials inspect and change broker topology. When Management credentials are omitted, Spoolrail uses the AMQP credentials.
 
 See [RabbitMQ](rabbitmq.md) for multiple hosts, TLS, and topology management.
+
+## AWS SNS/SQS Environment
+
+The bundled `snssqs` connection requires the resource owner's AWS account ID in addition to the Region:
+
+```dotenv
+SPOOLRAIL_CONNECTION=snssqs
+SPOOLRAIL_PREFIX=warehouse-production
+
+AWS_DEFAULT_REGION=us-east-1
+AWS_ACCOUNT_ID=123456789012
+```
+
+The account ID addresses resources; credentials still come from the AWS SDK provider chain or the connection's `key`, `secret`, and optional `token` settings. See [AWS SNS/SQS](aws.md) for the complete connection, FIFO behavior, permissions, custom endpoints, and topology management.
 
 ## Ownership Prefix
 

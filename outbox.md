@@ -47,7 +47,7 @@ DB::transaction(function () use ($order): void {
 });
 ```
 
-The outbox record commits and rolls back with that transaction. If you configure the outbox to use another database connection, start the transaction on that connection.
+The outbox record commits and rolls back with that transaction. Any headers and ordering key are preserved when the message is published later. If you configure the outbox to use another database connection, start the transaction on that connection.
 
 ## Scheduling Publication
 

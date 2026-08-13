@@ -15,7 +15,7 @@ Spoolrail::subscribe(
 );
 ```
 
-Spoolrail loads this file when the application boots. Run `php artisan spoolrail:sync` after changing declarations so RabbitMQ can create any missing resources.
+Spoolrail loads this file when the application boots.
 
 Each subscription receives its own copy of every message published to its topic:
 
@@ -27,6 +27,50 @@ Spoolrail::subscribe('orders', 'analytics-orders', RecordOrderAnalytics::class);
 Subscription names follow the same character rules as [topic names](messages.md#topic-names), contain at most 50 characters, and must be unique across the application, including subscriptions on different connections.
 
 > The 50-character limit leaves enough room for the ownership prefix and `.fifo` suffix within AWS SQS's 80-character queue name limit.
+
+## Synchronizing Topology
+
+Subscription declarations are the source for managed broker topology. Publishing and consuming do not create broker resources.
+
+Run the synchronization command after deploying declaration changes:
+
+```bash
+php artisan spoolrail:sync
+```
+
+Spoolrail inspects every referenced managed connection before applying any changes, so an inspection failure changes nothing. A successful synchronization creates missing compatible resources and relationships, but does not convert, replace, or delete existing resources.
+
+Resource creation is not transactional. If a broker, service, or network failure interrupts synchronization, correct the failure and rerun the command; compatible resources already created are reused.
+
+A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
+
+The [RabbitMQ](rabbitmq.md#managed-topology) and [AWS SNS/SQS](aws.md#managed-topology) guides describe how subscription declarations map to native resources and which management credentials they require.
+
+## Removing Resources
+
+Removing a subscription declaration does not delete its broker resource. Until that resource is deleted, it may continue collecting messages from its topic. Once it is drained or its remaining messages may be discarded, delete undeclared subscription resources:
+
+```bash
+php artisan spoolrail:delete-undeclared-subscriptions
+```
+
+Each deletion command targets the default Spoolrail connection unless you pass a configured name such as `--connection=events`. The command permanently deletes each undeclared receive resource, its buffered messages, and its routing from the topic.
+
+After changing the application's ownership prefix, delete every subscription resource under the former prefix with:
+
+```bash
+php artisan spoolrail:delete-undeclared-subscriptions --retired-prefix=warehouse-staging
+```
+
+The current ownership prefix cannot be supplied as retired.
+
+Delete an unused topic explicitly:
+
+```bash
+php artisan spoolrail:delete-topic orders
+```
+
+The command deletes only a compatible unused topic. Deletion is refused while bindings or subscriptions remain, and it never deletes subscription resources.
 
 ## Writing a Handler
 
@@ -163,7 +207,7 @@ A RabbitMQ subscription queue remains on the connection and topic where it was c
 2. Update publishers to use the replacement's topic and Spoolrail connection.
 3. Keep the original subscription running until its RabbitMQ queue is empty.
 4. Remove the original declaration. If Laravel Queue may still contain jobs for its name, add the mapping described in [Renaming a Subscription](#renaming-a-subscription) to the replacement at the same time.
-5. [Remove the original RabbitMQ queue](rabbitmq.md#removing-subscriptions) from its original connection.
+5. [Remove the original RabbitMQ subscription resource](#removing-resources) from its original connection.
 
 ## Renaming a Subscription
 
