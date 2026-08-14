@@ -100,12 +100,3 @@ sudo supervisorctl start spoolrail
 ```
 
 These are initial provisioning commands. Ordinary deployments use only `php artisan spoolrail:terminate` after the active release changes.
-
-## Database Queue Transactions
-
-Spoolrail refuses to use Laravel's database Queue while that Queue's database connection has an open transaction. Commit or roll back before consuming, or route the subscription to another Queue connection:
-
-```php
-Spoolrail::subscribe('orders', 'warehouse-orders', ReserveInventory::class)
-    ->onQueueConnection('redis');
-```

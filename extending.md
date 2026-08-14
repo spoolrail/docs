@@ -18,8 +18,6 @@ Register its creator from an application service provider:
 ```php
 <?php
 
-declare(strict_types=1);
-
 namespace App\Providers;
 
 use App\Spoolrail\AcmeClient;

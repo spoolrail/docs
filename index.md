@@ -39,8 +39,6 @@ Handlers implement `MessageHandler` and are resolved through Laravel's service c
 ```php
 <?php
 
-declare(strict_types=1);
-
 namespace App\Spoolrail\Handlers;
 
 use App\Services\Inventory;
@@ -68,8 +66,6 @@ Create `routes/subscriptions.php`:
 
 ```php
 <?php
-
-declare(strict_types=1);
 
 use App\Spoolrail\Handlers\ReserveInventory;
 use Spoolrail\Spoolrail\Facades\Spoolrail;
@@ -125,6 +121,6 @@ The returned message contains the UUID and UTC publication time that subscribers
 - [Subscriptions and Handlers](subscriptions.md)
 - [Running Consumers](consumers.md)
 - [RabbitMQ](rabbitmq.md)
-- [AWS SNS/SQS](aws.md)
+- [AWS SNS/SQS](snssqs.md)
 - [Testing](testing.md)
 - [Custom Drivers](extending.md)

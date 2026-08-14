@@ -99,7 +99,7 @@ Drivers use the key as follows:
 - AWS FIFO keeps messages with the same key in one ordered group and uses one topic-wide group when the key is omitted.
 - AWS standard forwards a supplied key to SQS for fair-queue tenant grouping without ordering or deduplication.
 
-Ordering-capable transports preserve broker-to-Laravel-Queue handoff order within a group, not across groups or subscriptions. Laravel Queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](aws.md#fifo-mode-and-ordering) for AWS throughput limits.
+Ordering-capable transports preserve broker-to-Laravel-Queue handoff order within a group, not across groups or subscriptions. Laravel Queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](snssqs.md#fifo-mode-and-ordering) for AWS throughput limits.
 
 ## Topic Names
 

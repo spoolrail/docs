@@ -45,34 +45,33 @@ SPOOLRAIL_CONNECTION=rabbitmq
 SPOOLRAIL_PREFIX=warehouse-production
 
 RABBITMQ_SCHEME=amqp
-RABBITMQ_HOST=rabbit.internal
+RABBITMQ_HOST=127.0.0.1
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=application
 RABBITMQ_PASSWORD=secret
-RABBITMQ_VHOST=orders
 
-RABBITMQ_MANAGEMENT_URL=http://rabbit.internal:15672
-RABBITMQ_MANAGEMENT_USERNAME=topology
-RABBITMQ_MANAGEMENT_PASSWORD=secret
+RABBITMQ_MANAGEMENT_URL=http://127.0.0.1:15672
 ```
 
-The AMQP credentials publish and consume messages. The Management credentials inspect and change broker topology. When Management credentials are omitted, Spoolrail uses the AMQP credentials.
+By default, Spoolrail uses the RabbitMQ username and password for both AMQP and the Management API.
 
-See [RabbitMQ](rabbitmq.md) for multiple hosts, TLS, and topology management.
+See [RabbitMQ](rabbitmq.md) for multiple hosts, TLS, and separate topology management credentials.
 
 ## AWS SNS/SQS Environment
 
-The bundled `snssqs` connection requires the resource owner's AWS account ID in addition to the Region:
+The bundled `snssqs` connection reads the common AWS credential variables and requires the resource owner's account ID in addition to the Region:
 
 ```dotenv
 SPOOLRAIL_CONNECTION=snssqs
 SPOOLRAIL_PREFIX=warehouse-production
 
+AWS_ACCESS_KEY_ID=<your-key-id>
+AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
 AWS_DEFAULT_REGION=us-east-1
 AWS_ACCOUNT_ID=123456789012
 ```
 
-The account ID addresses resources; credentials still come from the AWS SDK provider chain or the connection's `key`, `secret`, and optional `token` settings. See [AWS SNS/SQS](aws.md) for the complete connection, FIFO behavior, permissions, custom endpoints, and topology management.
+The account ID addresses resources. Define `AWS_SESSION_TOKEN` as well when using temporary credentials. Applications using the AWS SDK's default credential provider chain, such as an IAM role, may omit all three credential variables. See [AWS SNS/SQS](snssqs.md) for the complete connection, FIFO behavior, permissions, custom endpoints, and topology management.
 
 ## Ownership Prefix
 

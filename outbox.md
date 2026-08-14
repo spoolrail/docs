@@ -2,6 +2,9 @@
 
 Spoolrail publishes directly to the selected broker connection by default. Enable the transactional outbox when a database change and its publication must commit or roll back together.
 
+> [!NOTE]
+> The transactional outbox is optional. It coordinates publication with a database transaction; it is not a general fault-tolerance measure. See [Publication Retries](messages.md#publication-retries) for handling transient broker failures.
+
 The policy applies to every Spoolrail publication in the application. Existing publishing code keeps using `Spoolrail::publish(...)` or `Spoolrail::connection(...)->publish(...)`.
 
 ## Enabling the Outbox

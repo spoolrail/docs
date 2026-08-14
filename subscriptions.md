@@ -44,7 +44,7 @@ Resource creation is not transactional. Spoolrail automatically retries short-li
 
 A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
 
-The [RabbitMQ](rabbitmq.md#managed-topology) and [AWS SNS/SQS](aws.md#managed-topology) guides describe how subscription declarations map to native resources and which management credentials they require.
+The [RabbitMQ](rabbitmq.md#managed-topology) and [AWS SNS/SQS](snssqs.md#managed-topology) guides describe how subscription declarations map to native resources and which management credentials they require.
 
 ## Removing Resources
 
@@ -78,8 +78,6 @@ Handlers are concrete classes implementing `MessageHandler`. Laravel resolves th
 
 ```php
 <?php
-
-declare(strict_types=1);
 
 namespace App\Spoolrail\Handlers;
 
