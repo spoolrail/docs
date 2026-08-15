@@ -6,7 +6,9 @@ A publisher sends a `Message` to a topic. Every subscription to that topic gets 
 
 ## Delivery Guarantees
 
-Spoolrail delivers every published message **once** and **in order** to each subscription’s Laravel Queue, including through ordinary publication and broker redelivery retries.
+By default, Spoolrail delivers every published message **once** and **in order** to each subscription’s Laravel Queue, including through ordinary publication and broker redelivery retries.
+
+Individual drivers may offer opt-in settings that trade one or more of these guarantees for a higher throughput ceiling.
 
 A duplicate handoff remains technically possible, though unlikely. For example, this can happen if the broker accepts an outbox publication but Spoolrail does not receive confirmation, followed by downtime long enough for the [idempotency window](consumers.md#message-delivery) to expire before the dispatcher retries the publication.
 
