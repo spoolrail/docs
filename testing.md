@@ -66,3 +66,12 @@ When a subscription uses an asynchronous Queue connection:
 4. assert the handler's domain effect.
 
 Use transport-backed integration tests when behavior depends on native acceptance, delivery, settlement, or topology. For AWS SNS/SQS tests, point a test connection at a local AWS-compatible endpoint such as MiniStack.
+
+For Google Pub/Sub tests, start the Pub/Sub emulator and expose its standard environment variable to the PHP process:
+
+```dotenv
+GOOGLE_CLOUD_PROJECT=spoolrail-test
+PUBSUB_EMULATOR_HOST=127.0.0.1:8085
+```
+
+Leave the Pub/Sub connection's `credentials` setting `null`. Spoolrail follows `PUBSUB_EMULATOR_HOST` without requiring emulator credentials or a custom endpoint. The emulator can establish publication, pull delivery, acknowledgment, fanout, and topology behavior; it is not evidence for production ordering or exactly-once guarantees.

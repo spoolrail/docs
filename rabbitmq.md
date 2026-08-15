@@ -1,8 +1,33 @@
 # RabbitMQ
 
-See [Installation and Configuration](installation.md) for supported versions and the basic environment variables.
+The RabbitMQ driver publishes each topic to a fanout exchange and gives every Spoolrail subscription its own queue.
 
-## Connection Settings
+## Driver Prerequisites
+
+The driver requires RabbitMQ 4.3 or later and `php-amqplib/php-amqplib` 3.7.4 or later. Install the AMQP client using Composer:
+
+```bash
+composer require php-amqplib/php-amqplib:^3.7.4
+```
+
+Topology commands also require the RabbitMQ Management plugin and access to its HTTP API.
+
+Configure the RabbitMQ connection in `.env`:
+
+```dotenv
+RABBITMQ_SCHEME=amqp
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=application
+RABBITMQ_PASSWORD=secret
+RABBITMQ_VHOST=/
+
+RABBITMQ_MANAGEMENT_URL=http://127.0.0.1:15672
+```
+
+By default, Spoolrail uses the RabbitMQ username and password for both AMQP and the Management API.
+
+## Configuration
 
 Publish `config/spoolrail.php` to configure the complete RabbitMQ connection:
 
