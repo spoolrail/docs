@@ -98,8 +98,9 @@ Drivers use the key as follows:
 - RabbitMQ and the `array` driver accept and ignore the key with no warning.
 - AWS FIFO keeps messages with the same key in one ordered group and uses one topic-wide group when the key is omitted.
 - AWS standard forwards a supplied key to SQS for fair-queue tenant grouping without ordering or deduplication.
+- Google Pub/Sub keeps messages with the same key in one ordered lane when ordering is enabled and uses one topic-wide lane when the key is omitted. When ordering is disabled, it still forwards a supplied key without making an ordering promise.
 
-Ordering-capable transports preserve broker-to-Laravel-Queue handoff order within a group, not across groups or subscriptions. Laravel Queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](snssqs.md#fifo-mode-and-ordering) for AWS throughput limits.
+Ordering-capable transports preserve broker-to-Laravel-Queue handoff order within a group, not across groups or subscriptions. Laravel Queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](snssqs.md#fifo-mode-and-ordering) and [Pub/Sub Message Ordering](pubsub.md#message-ordering) for provider-specific behavior and throughput limits.
 
 ## Topic Names
 
@@ -142,7 +143,7 @@ $message->transport?->orderingKey;
 
 `driver`, `connectionName`, `topic`, `subscription`, and `headers` are always present on received messages. `headers` is an `array<string, mixed>` containing the complete native header collection exposed by the transport, including transport-added values, or an empty array when the delivery has none. It can therefore contain more than 10 entries and values other than strings.
 
-`transportMessageId`, `transportPublishedAt`, `redelivered`, and `orderingKey` are nullable because a transport may not report those facts. A transport message ID is assigned by the transport and is distinct from the logical `$message->id`. A transport publication time is assigned by the transport and is distinct from the application-side `$message->publishedAt`. RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key; they report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group.
+`transportMessageId`, `transportPublishedAt`, `redelivered`, and `orderingKey` are nullable because a transport may not report those facts. A transport message ID is assigned by the transport and is distinct from the logical `$message->id`. A transport publication time is assigned by the transport and is distinct from the application-side `$message->publishedAt`. RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key; they report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group. Google Pub/Sub reports the Pub/Sub message ID, service publication time, delivery-attempt evidence when available, and ordering key.
 
 `redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel Queue attempts or establish whether the handler has already completed.
 

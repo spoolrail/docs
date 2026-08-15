@@ -14,7 +14,7 @@ A duplicate handoff remains technically possible, though unlikely. For example, 
 
 ## Quick Start
 
-This walkthrough assumes your Laravel application can reach a RabbitMQ server with the Management plugin enabled. See [Installation and Configuration](installation.md) for supported versions, TLS, and advanced connection settings.
+This walkthrough assumes your Laravel application can reach a RabbitMQ server with the Management plugin enabled. See [RabbitMQ](rabbitmq.md) for supported versions, TLS, and advanced connection settings.
 
 ### 1. Install Spoolrail
 
@@ -130,5 +130,6 @@ The returned message contains the UUID and UTC publication time that subscribers
 - [Running Consumers](consumers.md)
 - [RabbitMQ](rabbitmq.md)
 - [AWS SNS/SQS](snssqs.md)
+- [Google Pub/Sub](pubsub.md)
 - [Testing](testing.md)
 - [Custom Drivers](extending.md)

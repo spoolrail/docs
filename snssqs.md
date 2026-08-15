@@ -1,8 +1,29 @@
 # AWS SNS/SQS
 
-The AWS SNS/SQS driver publishes to Amazon SNS and gives every Spoolrail subscription its own Amazon SQS queue. FIFO topology is the default; standard topology is available per connection. Install the optional AWS SDK as described in [Installation and Configuration](installation.md#installation) before selecting this driver.
+The AWS SNS/SQS driver publishes to Amazon SNS and gives every Spoolrail subscription its own Amazon SQS queue. FIFO topology is the default; standard topology is available per connection.
 
-## Connection Settings
+## Driver Prerequisites
+
+Install `aws/aws-sdk-php` 3.392.0 or later using Composer:
+
+```bash
+composer require aws/aws-sdk-php:^3.392.0
+```
+
+Configure the AWS account, credentials, and Region in `.env`:
+
+```dotenv
+AWS_ACCESS_KEY_ID=<your-key-id>
+AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
+AWS_DEFAULT_REGION=us-east-1
+AWS_ACCOUNT_ID=<your-account-id>
+```
+
+`AWS_ACCOUNT_ID` should contain the 12-digit ID of the account that owns your SNS topics and SQS queues. If you are using temporary AWS credentials, you should also define `AWS_SESSION_TOKEN`.
+
+If your application authenticates using the AWS SDK's default credential provider chain, such as an IAM role, you may leave `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` undefined.
+
+## Configuration
 
 Publish `config/spoolrail.php` to configure the bundled connection:
 
@@ -21,19 +42,6 @@ Publish `config/spoolrail.php` to configure the bundled connection:
 ],
 ```
 
-Typically, you should configure your AWS account and credentials using the following environment variables, which are referenced by the `config/spoolrail.php` configuration file:
-
-```dotenv
-AWS_ACCESS_KEY_ID=<your-key-id>
-AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
-AWS_DEFAULT_REGION=us-east-1
-AWS_ACCOUNT_ID=<your-account-id>
-```
-
-`AWS_ACCOUNT_ID` should contain the 12-digit ID of the account that owns your SNS topics and SQS queues. If you are using temporary AWS credentials, you should also define `AWS_SESSION_TOKEN`.
-
-If your application authenticates using the AWS SDK's default credential provider chain, such as an IAM role, you may leave `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` undefined.
-
 When using a compatible local service such as MiniStack, you may define its endpoint using `SPOOLRAIL_AWS_ENDPOINT`. This variable should be left undefined when connecting to AWS.
 
 SQS consumers long-poll for 20 seconds. Therefore, any custom `request_timeout` value must be greater than 20.
@@ -50,7 +58,7 @@ FIFO ordering ends when Spoolrail hands a delivery to Laravel Queue; handler con
 
 AWS publishes current per-group and regional limits in its [SNS message-group guidance](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-grouping.html) and [SNS service quotas](https://docs.aws.amazon.com/general/latest/gr/sns.html).
 
-## Standard Mode
+## Higher Throughput Without Ordering and Deduplication Guarantees
 
 Set `'fifo' => false` to create unsuffixed standard topics and queues. Standard mode avoids FIFO's per-group throughput and sequencing constraints, but provides at-least-once, best-effort-order delivery instead of FIFO ordering.
 
@@ -70,7 +78,7 @@ Changing `fifo` on the existing connection before draining it redirects logical 
 
 ## Managed Topology
 
-After declaring subscriptions, run [topology synchronization](subscriptions.md#synchronizing-topology) with AWS credentials that have the required [topology permissions](#iam-permissions). When synchronization needs to create resources, those credentials must belong to the configured `account_id`.
+After declaring subscriptions, run [topology synchronization](subscriptions.md#synchronizing-topology). When synchronization needs to create resources, the AWS credentials it uses must belong to the configured `account_id`.
 
 For each declaration, Spoolrail creates or verifies:
 
@@ -113,3 +121,5 @@ sqs:GetQueueAttributes
 sqs:SetQueueAttributes
 sqs:DeleteQueue
 ```
+
+The AWS-managed [**AmazonSNSFullAccess**](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonSNSFullAccess.html) and [**AmazonSQSFullAccess**](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonSQSFullAccess.html) policies cover the runtime and topology permissions listed above.
