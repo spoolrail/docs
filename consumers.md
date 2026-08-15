@@ -26,7 +26,7 @@ Spoolrail hands each delivery to the subscription's configured Laravel Queue, wh
 
 Spoolrail considers a broker delivery complete only after the selected Laravel Queue accepts it. If the Queue handoff fails or the consumer stops first, the message remains unacknowledged and the broker will redeliver it.
 
-If an acknowledgment does not reach the broker, the broker will technically redeliver the message. However, Spoolrail deduplicates that redelivery before handing it to Laravel Queue, so that redelivery does not add a second Laravel job. This deduplication covers recent repeats of the same broker-to-Queue handoff; it does not add an exactly-once delivery guarantee to brokers that do not already provide one.
+Spoolrail retains each successful Queue handoff for the configured idempotency window. If an acknowledgment does not reach the broker and the broker redelivers the message during that window, Spoolrail acknowledges the redelivery without adding another Laravel job.
 
 Once Laravel Queue accepts the message, Laravel Queue owns handler execution, retries, timeouts, and terminal failure.
 

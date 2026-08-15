@@ -4,6 +4,12 @@ Spoolrail lets Laravel applications exchange messages through a broker without g
 
 A publisher sends a `Message` to a topic. Every subscription to that topic gets its own copy. The long-running `php artisan spoolrail` command hands each copy to the Laravel Queue selected by the subscription, where the message handler runs.
 
+## Delivery Guarantees
+
+Spoolrail delivers every published message **once** and **in order** to each subscription’s Laravel Queue, including through ordinary publication and broker redelivery retries.
+
+A duplicate handoff remains technically possible, though unlikely. For example, this can happen if the broker accepts an outbox publication but Spoolrail does not receive confirmation, followed by downtime long enough for the [idempotency window](consumers.md#message-delivery) to expire before the dispatcher retries the publication.
+
 ## Quick Start
 
 This walkthrough assumes your Laravel application can reach a RabbitMQ server with the Management plugin enabled. See [Installation and Configuration](installation.md) for supported versions, TLS, and advanced connection settings.
