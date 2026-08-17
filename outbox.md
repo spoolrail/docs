@@ -50,7 +50,7 @@ DB::transaction(function () use ($order): void {
 });
 ```
 
-The outbox record commits and rolls back with that transaction. Any headers and ordering key are preserved when the message is published later. If you configure the outbox to use another database connection, start the transaction on that connection.
+The outbox record commits and rolls back with that transaction. Any headers and ordering key are preserved when the message is published later. If the outbox uses a different database connection, set `SPOOLRAIL_OUTBOX_DATABASE_CONNECTION` to its Laravel connection name and start the transaction on that connection.
 
 ## Scheduling Publication
 
@@ -59,6 +59,14 @@ Run pending publications with:
 ```bash
 php artisan spoolrail:publish
 ```
+
+The dispatcher publishes serially in a single process by default. Increase the outbox concurrency setting to publish several topics at once while **preserving publication order within each topic**:
+
+```dotenv
+SPOOLRAIL_OUTBOX_CONCURRENCY=4
+```
+
+With concurrency `4`, Spoolrail starts up to four workers and distributes all topics with pending publications across them. A worker may therefore handle several topics during the invocation, one publication at a time. The workers publish in parallel. If only one topic has pending publications, Spoolrail starts one worker.
 
 Schedule the finite command at the latency your application needs. A low-latency definition in `routes/console.php` can run every second:
 
@@ -71,33 +79,35 @@ Schedule::command('spoolrail:publish')
     ->withoutOverlapping();
 ```
 
-> **Deployment requirements:** Operate exactly one active outbox dispatcher across the entire deployment, including multi-server setups.
->
+> [!NOTE]
 > When using sub-minute scheduled tasks, run `php artisan schedule:interrupt` after each deployment so the scheduler loads the new code on its next invocation.
 
 Each invocation works through the rows visible when it starts and then exits. Rows committed during the run wait for the next invocation.
 
-`SIGINT`, `SIGTERM`, or `SIGQUIT` lets the command finish the publication already in progress and exit before starting another.
+When the command receives `SIGINT`, `SIGTERM`, or `SIGQUIT`, each publisher finishes its current publication, starts no new work, and exits. In concurrent mode, the command waits for all workers. The maximum wait depends on broker timeouts and your process monitor's shutdown timeout.
 
 ## Failure and Recovery
 
 Spoolrail applies its bounded publication retries during each dispatcher run. If those retries are exhausted, the publication remains in the outbox for the next scheduled run.
 
-Within each broker connection and topic, pending publications are handled oldest first. A failing row blocks later rows for that same connection and topic, while unrelated topics and connections continue. The command exits non-zero if any attempted publication fails or has an uncertain outcome.
+A failing publication blocks later publications for the same topic on that broker connection, while other publications continue. The command exits non-zero if any attempted publication fails or has an uncertain outcome.
+
+If a concurrent worker exits unexpectedly, the other workers finish without replacing it. The command exits non-zero, and every row the failed worker did not remove remains pending for the next invocation.
 
 The retained row records a short `last_error`, and its `updated_at` value shows when it was last attempted. Spoolrail also reports the contextual exception through Laravel's exception handler. Repeated reports for the same row are limited to one every five minutes by default:
 
 ```php
 'outbox' => [
     'enabled' => env('SPOOLRAIL_OUTBOX', false),
-    'connection' => env('SPOOLRAIL_OUTBOX_CONNECTION', env('DB_CONNECTION', 'sqlite')),
+    'database_connection' => env('SPOOLRAIL_OUTBOX_DATABASE_CONNECTION', env('DB_CONNECTION', 'sqlite')),
+    'concurrency' => env('SPOOLRAIL_OUTBOX_CONCURRENCY', 1),
     'exception_cooldown' => 300,
 ],
 ```
 
 A later successful attempt deletes the row and writes a recovery message at `notice` level.
 
-Spoolrail does not discard a publication after a fixed number of attempts. Persistent failures remain visible and keep their connection-and-topic lane blocked until the underlying problem is corrected.
+Spoolrail does not discard a publication after a fixed number of attempts. Persistent failures remain visible until the underlying problem is corrected.
 
 ## Changing Broker Connections
 
