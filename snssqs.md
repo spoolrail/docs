@@ -37,6 +37,8 @@ Publish `config/spoolrail.php` to configure the bundled connection:
     'account_id' => env('AWS_ACCOUNT_ID'),
     'endpoint' => env('SPOOLRAIL_AWS_ENDPOINT'),
     'fifo' => true,
+    'receive_batch_size' => 10,
+    'visibility_timeout' => 30,
     'connection_timeout' => 3,
     'request_timeout' => 60,
 ],
@@ -45,6 +47,12 @@ Publish `config/spoolrail.php` to configure the bundled connection:
 When using a compatible local service such as MiniStack, you may define its endpoint using `SPOOLRAIL_AWS_ENDPOINT`. This variable should be left undefined when connecting to AWS.
 
 SQS consumers long-poll for 20 seconds. Therefore, any custom `request_timeout` value must be greater than 20.
+
+### Receive Batch Size
+
+`receive_batch_size` controls how many messages Spoolrail fetches from the SQS queue per receive. Fetching several messages in one receive avoids a broker round trip for each message, reducing receive latency. It defaults to `10`, the AWS maximum; set it to `1` for one-at-a-time receives. The value is an upper bound: SQS returns up to that many available messages without waiting for a full batch to accumulate. Spoolrail hands returned messages to Laravel Queue one at a time.
+
+After SQS returns a batch, the visibility timeout controls how long an undeleted message remains unavailable for another receive from that subscription's queue. The default `visibility_timeout` is `30` seconds; see AWS's [`VisibilityTimeout` attribute documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html) for supported values. Spoolrail deletes each message after handing it to Laravel Queue; later worker execution does not use this time. Increasing the timeout gives slow handoffs more time, but also delays redelivery of undeleted messages after a consumer failure. Run `spoolrail:sync` after changing it.
 
 ## FIFO Mode and Ordering
 
