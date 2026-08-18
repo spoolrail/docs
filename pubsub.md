@@ -30,10 +30,18 @@ Publish `config/spoolrail.php` to configure the bundled connection:
     'endpoint' => env('SPOOLRAIL_GOOGLE_PUBSUB_ENDPOINT'),
     'message_ordering' => true,
     'exactly_once' => true,
+    'receive_batch_size' => 10,
+    'acknowledgment_deadline' => 30,
 ],
 ```
 
 `project_id` identifies the Google Cloud project that owns the topics and subscriptions. Spoolrail always uses the REST transport and does not require the gRPC PHP extension.
+
+### Receive Batch Size
+
+`receive_batch_size` controls how many messages Spoolrail fetches from Pub/Sub per receive. Fetching several messages in one pull avoids a broker round trip for each message, reducing receive latency. It defaults to `10` and accepts values from `1` through `1,000`; set it to `1` for one-at-a-time receives. Pub/Sub may return fewer messages than requested, and each response is limited to 10 MB. Spoolrail hands returned messages to Laravel Queue one at a time.
+
+After Pub/Sub returns a batch, the acknowledgment deadline controls how long an unacknowledged message remains unavailable for another pull from that subscription. The default `acknowledgment_deadline` is `30` seconds; see Google's [acknowledgment deadline documentation](https://cloud.google.com/pubsub/docs/subscription-properties) for supported values. Spoolrail acknowledges each message after handing it to Laravel Queue; later worker execution does not use this time. Increasing the deadline gives slow handoffs more time, but also delays redelivery of unacknowledged messages after a consumer failure. Run `spoolrail:sync` after changing it.
 
 ## Application Default Credentials
 
