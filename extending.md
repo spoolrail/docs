@@ -74,25 +74,29 @@ interface Driver
 }
 ```
 
-`publish` receives the selected topic, encoded message body, portable header map, and optional ordering key already validated by Spoolrail. Send the body unchanged, map headers into the transport's native application-header facility, and map the ordering key to the closest native grouping behavior. A driver whose topology has no meaningful grouping primitive may accept and ignore it. Return only after the transport has accepted the publication.
+`publish` receives the selected topic, encoded message body, portable header map, and optional ordering key after Spoolrail validates them. Send the body unchanged, map headers to the transport's native application headers, and map the ordering key to the closest native grouping mechanism. If the transport has no equivalent grouping feature, the driver may accept and ignore the key. Return only after the transport has accepted the publication.
 
-Configure finite connection and publication timeouts in the driver. This operation must always terminate because the transactional outbox dispatcher invokes it synchronously and does not impose a transport-independent timeout.
+Configure finite connection and publication timeouts in the driver. `publish` must return or throw because the transactional outbox dispatcher calls it synchronously and does not impose a transport-independent timeout.
 
-Throw `PublicationException::notSent(...)` when the publication failed before it could be sent, `PublicationException::rejected(...)` when the transport explicitly rejected it, and `PublicationException::outcomeUnknown(...)` when acceptance cannot be established. Preserve the transport failure as the supplied previous exception.
+Report publication failures with the exception that matches the outcome:
 
-Each `publish` call is one broker attempt. Spoolrail applies `spoolrail.publisher_retries` above the driver and does not retry a `Rejected` outcome.
+- `PublicationException::notSent(...)` when the publication failed before the driver could send it.
+- `PublicationException::rejected(...)` when the transport rejected it.
+- `PublicationException::outcomeUnknown(...)` when the driver cannot establish whether the transport accepted it.
+
+Pass the transport failure as the previous exception.
+
+Each `publish` call is one broker attempt. Spoolrail retries the driver call according to `spoolrail.publisher_retries` and does not retry a `Rejected` outcome.
 
 `consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
 
 Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Set `orderingKey` from the delivery's native group identifier when available; otherwise use `null`. Do not place acknowledgement, receipt, or settlement handles in the context.
 
-Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and surface the failure.
-
-These rules keep the source delivery available whenever the Queue handoff does not return normally.
+Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and report the failure.
 
 ## Closing Connections
 
-Implement `CanClose` when the driver owns a client or connection that must be released:
+Implement `CanClose` when the driver needs to close a client or connection:
 
 ```php
 use Spoolrail\Spoolrail\Contracts\CanClose;
@@ -102,8 +106,6 @@ public function close(): void
     $this->client->disconnect();
 }
 ```
-
-`Spoolrail::forgetConnection('events')` closes drivers supporting this contract before removing the cached connection.
 
 ## Managing Topology
 
@@ -126,14 +128,14 @@ class AcmeDriver implements CanManageTopology
 }
 ```
 
-The purpose of these methods is not immediately obvious, so here is an overview of each method:
+The methods divide topology management into inspection and explicit deletion:
 
-- The `planSync` method should inspect the transport without changing it and return a `TopologyPlan`. Spoolrail collects a plan for every managed connection before applying any plan, so a preflight failure prevents every plan from being applied.
-- The `undeclaredSubscriptionResourceNames` method should return the physical subscription resources owned by the supplied prefix that are not represented by the supplied declarations. Spoolrail passes each returned name to `deleteSubscription` when running the undeclared-subscription deletion command.
-- The `deleteSubscription` method should permanently delete the supplied physical subscription resource.
-- The `deleteTopic` method should delete the supplied logical topic. It should refuse the operation when the transport cannot establish that deleting the topic is safe.
+- `planSync` inspects the transport without changing it and returns a `TopologyPlan`. Spoolrail collects a plan for every managed connection before applying any plan. If preflight fails, Spoolrail applies none of them.
+- `undeclaredSubscriptionResourceNames` returns physical subscription resources owned by the supplied prefix but absent from the supplied declarations. The undeclared-subscription deletion command passes each returned name to `deleteSubscription`.
+- `deleteSubscription` permanently deletes the supplied physical subscription resource.
+- `deleteTopic` deletes the supplied logical topic. It must refuse the operation when the transport cannot establish that deletion is safe.
 
-A topology plan implements the `TopologyPlan` contract. A stubbed implementation looks like the following:
+A topology plan implements the `TopologyPlan` contract. A minimal implementation:
 
 ```php
 <?php
@@ -148,6 +150,6 @@ class AcmeTopologyPlan implements TopologyPlan
 }
 ```
 
-The `apply` method should perform only the creations established during `planSync`.
+The `apply` method creates only the resources established during `planSync`.
 
 If discovery encounters a short-lived service or rate-limit failure, or an apply request may have succeeded before failing, throw `TopologySyncRequiresRetryException::afterFailure($exception)`. Spoolrail will wait one second, discard the remaining plan, inspect every connection again, and retry synchronization once. Report permanent refusals and incompatible topology without this exception.

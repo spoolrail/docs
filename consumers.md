@@ -34,9 +34,9 @@ Handoff idempotency uses locks from the Laravel cache store configured by `spool
 
 ## Subscription Recovery
 
-If one subscription stops consuming unexpectedly, the others continue. Spoolrail restarts the affected subscription after 1, 5, 15, 30, then 60 seconds, and uses 60-second delays for further restarts. After the subscription has remained active for 60 seconds, the delay sequence resets and Spoolrail writes a recovery message at `notice` level, even if no messages arrived during that time.
+If one subscription stops, the others continue. Spoolrail restarts the affected subscription after 1, 5, 15, 30, then 60 seconds, and uses 60-second delays for further restarts. After the subscription has remained active for 60 seconds, the delay sequence resets and Spoolrail writes a recovery message at `notice` level, even if no messages arrived during that time.
 
-Spoolrail reports subscription failures through Laravel's exception handler, including the original cause. Each subscription failure category is reported at most once every five minutes by default. Applications can change the cooldown in `config/spoolrail.php`:
+Spoolrail reports subscription failures through Laravel's exception handler, including the original cause. By default, it reports each failure category at most once every five minutes. Applications can change the cooldown in `config/spoolrail.php`:
 
 ```php
 'consumer' => [
@@ -70,7 +70,7 @@ Other operating systems may provide Supervisor through their own package manager
 
 ## Supervisor Configuration
 
-Supervisor configuration files are typically stored in `/etc/supervisor/conf.d`. Create `/etc/supervisor/conf.d/spoolrail.conf` to start and monitor the default Spoolrail connection:
+Create `/etc/supervisor/conf.d/spoolrail.conf` to start and monitor the default Spoolrail connection:
 
 ```ini
 [program:spoolrail]

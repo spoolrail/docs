@@ -46,13 +46,13 @@ $published = Spoolrail::connection('partner')->publish(
 
 A publisher does not declare or select subscriptions. Every subscription already bound to the topic receives its own copy.
 
-By default, Spoolrail publishes immediately, including inside a database transaction. You can enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic. With the outbox enabled, the publishing call stores the publication without contacting the broker, so the change and pending publication are committed together, or neither is. A separate outbox dispatcher process publishes pending publications to the broker.
+By default, Spoolrail publishes immediately, including inside a database transaction. Enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic. With the outbox enabled, the publishing call stores a pending publication without contacting the broker. The transaction commits both the database change and publication, or rolls back both. A separate dispatcher publishes pending publications to the broker.
 
 ## Publication Retries
 
 By default, Spoolrail retries broker publication failures up to two times, waiting one second between attempts, unless the broker rejects the publication for a permanent reason.
 
-In the rare case where the broker accepts the message but its response does not reach Spoolrail due to a transient failure, a retry can publish the same message again. Spoolrail [deduplicates recent repeats during Queue handoff](consumers.md#message-delivery).
+If the broker accepts a message but its response does not reach Spoolrail due to a transient failure, a retry can publish the same message again. Spoolrail [deduplicates recent repeats during Queue handoff](consumers.md#message-delivery).
 
 Retries can extend how long direct publishing waits during a broker failure. Configure them under `spoolrail.publisher_retries`.
 
@@ -75,11 +75,9 @@ $published = Spoolrail::publish(
 
 Use lowercase kebab-case keys and string values. Publications accept up to 10 headers, the AWS SNS-to-SQS portability limit.
 
-Headers belong to a publication, not to `Message`. They are not encoded in the JSON envelope or retained on the returned message. Publishing a received message does not automatically forward its received headers; pass the selected headers explicitly.
-
 ## Ordering Keys
 
-Pass an ordering key when a topic contains independent groups that may progress in parallel but must remain ordered within each group:
+Use an ordering key to split a topic into independent groups. Different groups may progress in parallel while messages within each group stay ordered:
 
 ```php
 $published = Spoolrail::publish(
@@ -90,8 +88,6 @@ $published = Spoolrail::publish(
 ```
 
 Use the named fourth argument; `headers` remains the third argument and does not need an empty placeholder. A key must contain between 1 and 128 printable ASCII characters without spaces.
-
-Ordering keys are not stored on `Message` or automatically reused when publishing a received message. Pass the key explicitly when the new publication should use it.
 
 Drivers use the key as follows:
 
@@ -141,9 +137,11 @@ $message->transport?->redelivered;
 $message->transport?->orderingKey;
 ```
 
-`driver`, `connectionName`, `topic`, `subscription`, and `headers` are always present on received messages. `headers` is an `array<string, mixed>` containing the complete native header collection exposed by the transport, including transport-added values, or an empty array when the delivery has none. It can therefore contain more than 10 entries and values other than strings.
+`driver`, `connectionName`, `topic`, `subscription`, and `headers` are always present on received messages. `headers` is an `array<string, mixed>` containing the complete native header collection exposed by the transport, including transport-added values. It is empty when the delivery has no headers and may contain more than 10 entries or values other than strings.
 
-`transportMessageId`, `transportPublishedAt`, `redelivered`, and `orderingKey` are nullable because a transport may not report those facts. A transport message ID is assigned by the transport and is distinct from the logical `$message->id`. A transport publication time is assigned by the transport and is distinct from the application-side `$message->publishedAt`. RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key; they report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group. Google Pub/Sub reports the Pub/Sub message ID, service publication time, delivery-attempt evidence when available, and ordering key.
+`transportMessageId`, `transportPublishedAt`, `redelivered`, and `orderingKey` are nullable because a transport may not report those facts. The transport message ID is separate from the logical `$message->id`, and the transport publication time is separate from the application-side `$message->publishedAt`.
+
+RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key. They report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group. Google Pub/Sub reports the Pub/Sub message ID, service publication time, delivery-attempt evidence when available, and ordering key.
 
 `redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel Queue attempts or establish whether the handler has already completed.
 

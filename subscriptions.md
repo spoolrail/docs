@@ -40,7 +40,7 @@ php artisan spoolrail:sync
 
 Spoolrail inspects every referenced managed connection before applying any changes, so an inspection failure changes nothing. A successful synchronization creates missing compatible resources and relationships, but does not convert, replace, or delete existing resources.
 
-Resource creation is not transactional. Spoolrail automatically retries short-lived service and rate-limit failures. After a partially applied attempt, both automatic recovery and a later `spoolrail:sync` run read current broker state and apply only what remains.
+Resource creation is not transactional. Spoolrail retries short-lived service and rate-limit failures. After a partially applied attempt, both recovery and a later `spoolrail:sync` run read current broker state and apply only what remains.
 
 A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
 
@@ -48,7 +48,7 @@ The [RabbitMQ](rabbitmq.md#managed-topology), [AWS SNS/SQS](snssqs.md#managed-to
 
 ## Removing Resources
 
-Removing a subscription declaration does not delete its broker resource. Until that resource is deleted, it may continue collecting messages from its topic. Once it is drained or its remaining messages may be discarded, delete undeclared subscription resources:
+Removing a subscription declaration does not delete its broker resource. The resource may continue collecting messages from its topic until you delete it. After draining its messages or deciding to discard them, delete undeclared subscription resources:
 
 ```bash
 php artisan spoolrail:delete-undeclared-subscriptions
@@ -62,15 +62,15 @@ After changing the application's ownership prefix, delete every subscription res
 php artisan spoolrail:delete-undeclared-subscriptions --retired-prefix=warehouse-staging
 ```
 
-The current ownership prefix cannot be supplied as retired.
+You cannot pass the current ownership prefix to `--retired-prefix`.
 
-Delete an unused topic explicitly:
+Delete an unused topic:
 
 ```bash
 php artisan spoolrail:delete-topic orders
 ```
 
-The command deletes only a compatible unused topic. Deletion is refused while bindings or subscriptions remain, and it never deletes subscription resources.
+The command deletes only a compatible unused topic. Spoolrail refuses the deletion while bindings or subscriptions remain, and the command never deletes subscription resources.
 
 ## Writing a Handler
 
@@ -167,7 +167,7 @@ Prefer methods when attempts or backoff are dynamic. Spoolrail captures Queue po
 
 ## Handling Terminal Failures
 
-A handler may define a `failed` method for message-specific cleanup or reporting. Spoolrail calls this method once after the queue marks the handler's job as failed. This works similarly to Laravel's queued jobs and listeners.
+A handler may define a `failed` method for message-specific cleanup or reporting. Spoolrail calls it once after the queue marks the handler's job as failed.
 
 ```php
 use Spoolrail\Spoolrail\Message;
@@ -179,7 +179,7 @@ public function failed(Message $message, ?Throwable $exception): void
 }
 ```
 
-> A new instance of the handler is instantiated before invoking the `failed` method; therefore, any class property modifications that may have occurred within the `handle` method will be lost.
+> Spoolrail creates a new handler instance before it calls `failed`. Changes that `handle` made to class properties are unavailable.
 
 You can also register a `Queue::failing` callback in service provider for application-wide failure reporting:
 
@@ -221,6 +221,6 @@ Spoolrail::subscribe(
 
 The former name becomes reserved and cannot also be an active subscription.
 
-This mapping applies only to work already handed to Laravel Queue. It does not move messages still buffered in the old RabbitMQ queue. Drain that queue with the old consumer, or explicitly decide to discard it, before running the subscription cleanup command.
+This mapping applies only to work already handed to Laravel Queue. It does not move messages still buffered in the old RabbitMQ queue. Drain that queue with the old consumer, or decide to discard it, before running the subscription cleanup command.
 
 Keep the mapping until every queued, delayed, retryable, in-flight, or failed Laravel job using the former name has completed or been discarded.

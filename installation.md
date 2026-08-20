@@ -31,11 +31,11 @@ SPOOLRAIL_PREFIX=warehouse-production
 
 `SPOOLRAIL_CONNECTION` names a connection from `config/spoolrail.php`. The bundled broker connections are `rabbitmq`, `snssqs`, and `pubsub`.
 
-`SPOOLRAIL_PREFIX` namespaces subscription resources owned by the application. Set it explicitly before consuming messages or managing subscriptions and keep it stable. Publisher-only applications do not need it.
+`SPOOLRAIL_PREFIX` namespaces subscription resources owned by the application. Set it before consuming messages or managing subscriptions, and keep it stable. Publisher-only applications do not need it.
 
-Choose a short value from the application's durable identity. It is recommended to keep the prefix independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must begin with an ASCII letter, contain only ASCII letters, digits, hyphens, and underscores, and contain at most 24 characters.
+Use a short, stable identifier for the application and environment. Keep it independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must contain at most 24 characters (letters, digits, hyphens, and underscores are allowed).
 
-Use a different prefix for every receiving application sharing a transport scope. Give environments distinct prefixes only when they deliberately share that scope. Changing the prefix creates a new set of subscription resources and leaves the old resources in place.
+Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:sync` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](subscriptions.md#removing-resources).
 
 The ownership prefix is reserved for Spoolrail-managed subscription resources. Undeclared-subscription cleanup treats every resource in that namespace as application-owned and may delete it when no active subscription declares it.
 
@@ -71,14 +71,14 @@ Select a connection when publishing:
 Spoolrail::connection('partner')->publish('orders', $message);
 ```
 
+This publishes through the `partner` connection. The default connection remains unchanged.
+
 Or assign a subscription to it:
 
 ```php
 Spoolrail::subscribe('orders', 'partner-orders', HandlePartnerOrder::class)
     ->onConnection('partner');
 ```
-
-Changing a resolved connection's configuration at runtime does not rebuild it automatically. Call `Spoolrail::forgetConnection('partner')` when a test or long-running process must reconnect with new settings.
 
 ## Transactional Outbox
 

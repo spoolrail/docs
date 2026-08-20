@@ -50,7 +50,7 @@ DB::transaction(function () use ($order): void {
 });
 ```
 
-The outbox record commits and rolls back with that transaction. Any headers and ordering key are preserved when the message is published later. If the outbox uses a different database connection, set `SPOOLRAIL_OUTBOX_DATABASE_CONNECTION` to its Laravel connection name and start the transaction on that connection.
+The transaction commits or rolls back the outbox record with the application changes. The later publication retains its headers and ordering key. If the outbox uses a different database connection, set `SPOOLRAIL_OUTBOX_DATABASE_CONNECTION` to its Laravel connection name and start the transaction on that connection.
 
 ## Scheduling Publication
 
@@ -66,9 +66,9 @@ The dispatcher publishes serially in a single process by default. Increase the o
 SPOOLRAIL_OUTBOX_CONCURRENCY=4
 ```
 
-With concurrency `4`, Spoolrail starts up to four workers and distributes all topics with pending publications across them. A worker may therefore handle several topics during the invocation, one publication at a time. The workers publish in parallel. If only one topic has pending publications, Spoolrail starts one worker.
+With concurrency `4`, Spoolrail starts up to four workers and distributes all topics with pending publications across them. A worker may handle several topics during the invocation, one publication at a time. The workers publish in parallel. If only one topic has pending publications, Spoolrail starts one worker.
 
-Schedule the finite command at the latency your application needs. A low-latency definition in `routes/console.php` can run every second:
+Schedule the command often enough to meet the application's latency requirement. A low-latency definition in `routes/console.php` can run every second:
 
 ```php
 use Illuminate\Support\Facades\Schedule;
@@ -94,7 +94,7 @@ A failing publication blocks later publications for the same topic on that broke
 
 If a concurrent worker exits unexpectedly, the other workers finish without replacing it. The command exits non-zero, and every row the failed worker did not remove remains pending for the next invocation.
 
-The retained row records a short `last_error`, and its `updated_at` value shows when it was last attempted. Spoolrail also reports the contextual exception through Laravel's exception handler. Repeated reports for the same row are limited to one every five minutes by default:
+The retained row records a short `last_error`, and its `updated_at` value shows when it was last attempted. Spoolrail also reports the failure through Laravel's exception handler. By default, it reports failures for the same row at most once every five minutes:
 
 ```php
 'outbox' => [
@@ -107,10 +107,10 @@ The retained row records a short `last_error`, and its `updated_at` value shows 
 
 A later successful attempt deletes the row and writes a recovery message at `notice` level.
 
-Spoolrail does not discard a publication after a fixed number of attempts. Persistent failures remain visible until the underlying problem is corrected.
+Spoolrail does not discard a publication after a fixed number of attempts. Persistent failures remain visible until you fix their cause.
 
 ## Changing Broker Connections
 
-Each outbox row retains the Spoolrail connection name selected when it was staged, and dispatch resolves that name from current configuration.
+Each outbox row retains the Spoolrail connection name selected when it was staged. The dispatcher resolves that name from current configuration.
 
-When moving from one broker connection to another, give the new connection a new name and direct new publications to it. Keep the old named connection configured until its outbox rows have been published or otherwise deliberately handled. Reusing the old name for new driver settings would also route its pending rows through those new settings.
+When moving to another broker connection, give the new connection a new name and direct new publications to it. Keep the old connection configured until you publish or otherwise handle its outbox rows. Reusing the old name for new driver settings would route pending rows through those settings.

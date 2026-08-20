@@ -66,9 +66,9 @@ The Management URL may point to the server root or end in `/api`. It must use HT
 
 ## Message Properties
 
-The JSON envelope remains the portable source of message identity, type, payload, and millisecond publication time. RabbitMQ publications also project the logical message ID into AMQP `message_id`, the message type into AMQP `type`, and the publication time into AMQP `timestamp` so RabbitMQ tooling can display those values. AMQP timestamps have one-second resolution.
+The JSON envelope carries the portable message identity, type, payload, and millisecond publication time. RabbitMQ publications also copy the logical message ID to AMQP `message_id`, the message type to AMQP `type`, and the publication time to AMQP `timestamp` so RabbitMQ tooling can display them. AMQP timestamps have one-second resolution.
 
-These properties remain publisher-supplied projections. They do not populate the receive-side transport-assigned ID or publication-time fields, which are `null` for RabbitMQ. Portable publication headers use AMQP application headers and are available through the received message's transport context.
+RabbitMQ does not treat these publisher-supplied properties as transport-assigned values. The receive-side transport ID and publication time remain `null`. Portable publication headers use AMQP application headers and are available through the received message's transport context.
 
 ## Multiple Hosts
 
@@ -81,11 +81,11 @@ Use `hosts` instead of `host` to try brokers in order while opening a connection
 ],
 ```
 
-Do not configure both keys, and list only nodes from the same RabbitMQ cluster. A publication retry may reconnect through the next host after an earlier attempt was not confirmed.
+Configure either `host` or `hosts`, not both. List only nodes from the same RabbitMQ cluster. A publication retry may reconnect through the next host after an earlier attempt was not confirmed.
 
 ## TLS
 
-The built-in scheme and port settings are already environment-driven:
+Set the scheme and port in `.env`:
 
 ```dotenv
 RABBITMQ_SCHEME=amqps
@@ -114,4 +114,4 @@ After declaring subscriptions, run [topology synchronization](subscriptions.md#s
 - a durable queue named `{ownership-prefix}-{subscription}`; and
 - a binding from the topic exchange to the subscription queue.
 
-RabbitMQ's virtual-host `default_queue_type` determines whether newly created subscription queues are classic or quorum. Both queue types are supported. Quorum queues must have unlimited delivery attempts. If synchronization reports an incompatible exchange, queue, binding, or delivery limit, correct that resource deliberately or choose a new logical name before running the command again.
+RabbitMQ's virtual-host `default_queue_type` determines whether newly created subscription queues are classic or quorum. Both queue types are supported. Quorum queues must have unlimited delivery attempts. If synchronization reports an incompatible exchange, queue, binding, or delivery limit, fix that resource or choose a new logical name before running the command again.

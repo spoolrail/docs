@@ -1,16 +1,16 @@
 # Spoolrail
 
-Spoolrail lets Laravel applications exchange messages through a broker without giving up Laravel Queue for background work.
+Spoolrail lets Laravel applications exchange messages through a broker while Laravel Queue runs their message handlers.
 
 A publisher sends a `Message` to a topic. Every subscription to that topic gets its own copy. The long-running `php artisan spoolrail` command hands each copy to the Laravel Queue selected by the subscription, where the message handler runs.
 
 ## Delivery Guarantees
 
-By default, Spoolrail delivers every published message **once** and **in order** to each subscription’s Laravel Queue, including through ordinary publication and broker redelivery retries.
+By default, Spoolrail delivers every published message **once** and **in order** to each subscription's Laravel Queue. This guarantee covers ordinary publication and broker redeliveries.
 
-Individual drivers may offer opt-in settings that trade one or more of these guarantees for a higher throughput ceiling.
+Some drivers let you disable one or more guarantees to raise the throughput limit.
 
-A duplicate handoff remains technically possible, though unlikely. For example, this can happen if the broker accepts an outbox publication but Spoolrail does not receive confirmation, followed by downtime long enough for the [idempotency window](consumers.md#message-delivery) to expire before the dispatcher retries the publication.
+Technically, a duplicate handoff is still possible. For example, the broker might accept an outbox publication without returning confirmation because of a network issue or crash. If the dispatcher stays down until the [handoff idempotency window](consumers.md#message-delivery) expires, its next attempt can hand off the message again. Separately, and independent of Spoolrail, Laravel Queue may re-run a handler when it fails partway and is retried. Where repeating a handler's effect would cause harm, consider making the handler itself idempotent.
 
 ## Quick Start
 
