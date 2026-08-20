@@ -30,21 +30,22 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             property: "og:image:width",
-            content: "2400",
+            content: "1730",
           },
         },
         {
           tag: "meta",
           attrs: {
             property: "og:image:height",
-            content: "1260",
+            content: "909",
           },
         },
         {
           tag: "meta",
           attrs: {
             property: "og:image:alt",
-            content: "Spoolrail landing page hero with the logo and tagline.",
+            content:
+              "Spoolrail pixel-art message routing system with the logo and tagline.",
           },
         },
         {
@@ -58,7 +59,8 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             name: "twitter:image:alt",
-            content: "Spoolrail landing page hero with the logo and tagline.",
+            content:
+              "Spoolrail pixel-art message routing system with the logo and tagline.",
           },
         },
         {
