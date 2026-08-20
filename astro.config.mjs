@@ -16,7 +16,7 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             property: "og:image",
-            content: "https://spoolrail.com/social-card.png",
+            content: "https://spoolrail.com/social-card-5f1fd172.png",
           },
         },
         {
@@ -52,7 +52,7 @@ export default defineConfig({
           tag: "meta",
           attrs: {
             name: "twitter:image",
-            content: "https://spoolrail.com/social-card.png",
+            content: "https://spoolrail.com/social-card-5f1fd172.png",
           },
         },
         {
