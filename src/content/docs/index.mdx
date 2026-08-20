@@ -58,23 +58,31 @@ The goal is to focus on what’s essential for every broker implementation, deli
 
 ## Quick Start
 
-Choose a driver below. The remaining steps are the same for all three drivers.
-
-### 1. Install Spoolrail
+### 1. Install the Package
 
 ```bash
 composer require spoolrail/spoolrail
 ```
 
-### 2. Configure a Driver
+### 2. Publish Spoolrail Files
 
-Set a stable ownership prefix for the app in `.env`:
+```bash
+php artisan spoolrail:install
+```
+
+The installer publishes `config/spoolrail.php` and creates `routes/subscriptions.php`.
+
+### 3. Set an Ownership Prefix
+
+Set a stable ownership prefix for the app in `.env`. The ownership prefix distinguishes this application's subscriptions from subscriptions owned by other applications:
 
 ```dotenv
 SPOOLRAIL_PREFIX=warehouse
 ```
 
-The ownership prefix distinguishes this application's subscription queues from queues owned by other applications.
+### 4. Configure a Driver
+
+Choose a driver below.
 
 <Tabs>
   <TabItem label="RabbitMQ">
@@ -151,20 +159,20 @@ The ownership prefix distinguishes this application's subscription queues from q
   </TabItem>
 </Tabs>
 
-### 3. Create a Handler
+### 5. Create a Handler
 
 Handlers implement `MessageHandler`:
 
 ```php
 <?php
 
-namespace App\Spoolrail\Handlers;
+namespace App\Messages;
 
 use App\Services\Inventory;
 use Spoolrail\Spoolrail\Contracts\MessageHandler;
 use Spoolrail\Spoolrail\Message;
 
-class ReserveInventory implements MessageHandler
+class ReserveInventoryHandler implements MessageHandler
 {
     public function __construct(
         private readonly Inventory $inventory,
@@ -179,26 +187,26 @@ class ReserveInventory implements MessageHandler
 }
 ```
 
-### 4. Declare a Subscription
+### 6. Declare a Subscription
 
-Create `routes/subscriptions.php`:
+Add the subscription to `routes/subscriptions.php`:
 
 ```php
 <?php
 
-use App\Spoolrail\Handlers\ReserveInventory;
+use App\Messages\ReserveInventoryHandler;
 use Spoolrail\Spoolrail\Facades\Spoolrail;
 
 Spoolrail::subscribe(
     topic: 'orders',
     name: 'warehouse-orders',
-    handler: ReserveInventory::class,
+    handler: ReserveInventoryHandler::class,
 );
 ```
 
 Spoolrail loads this file automatically.
 
-### 5. Create the Broker Resources
+### 7. Create the Broker Resources
 
 ```bash
 php artisan spoolrail:sync
@@ -206,7 +214,7 @@ php artisan spoolrail:sync
 
 Run this command during deployment whenever subscription declarations change.
 
-### 6. Start the Workers
+### 8. Start the Workers
 
 Run consumers for every subscription on the default Spoolrail connection:
 
@@ -216,7 +224,7 @@ php artisan spoolrail
 
 Make sure Laravel queue workers are running for the connections and queues selected by your subscriptions.
 
-### 7. Publish a Message
+### 9. Publish a Message
 
 ```php
 use Spoolrail\Spoolrail\Facades\Spoolrail;
