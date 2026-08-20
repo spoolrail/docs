@@ -8,13 +8,13 @@ description: Declare subscriptions, synchronize broker resources, and run messag
 Declare subscriptions in `routes/subscriptions.php`:
 
 ```php
-use App\Spoolrail\Handlers\ReserveInventory;
+use App\Messages\ReserveInventoryHandler;
 use Spoolrail\Spoolrail\Facades\Spoolrail;
 
 Spoolrail::subscribe(
     topic: 'orders',
     name: 'warehouse-orders',
-    handler: ReserveInventory::class,
+    handler: ReserveInventoryHandler::class,
 );
 ```
 
@@ -23,8 +23,8 @@ Spoolrail loads this file when the application boots.
 Each subscription receives its own copy of every message published to its topic:
 
 ```php
-Spoolrail::subscribe('orders', 'warehouse-orders', ReserveInventory::class);
-Spoolrail::subscribe('orders', 'analytics-orders', RecordOrderAnalytics::class);
+Spoolrail::subscribe('orders', 'warehouse-orders', ReserveInventoryHandler::class);
+Spoolrail::subscribe('orders', 'analytics-orders', RecordOrderAnalyticsHandler::class);
 ```
 
 Subscription names follow the same character rules as [topic names](/messages/#topic-names), contain at most 50 characters, and must be unique across the application, including subscriptions on different connections.
@@ -82,13 +82,13 @@ Handlers are concrete classes implementing `MessageHandler`. Laravel resolves th
 ```php
 <?php
 
-namespace App\Spoolrail\Handlers;
+namespace App\Messages;
 
 use App\Services\Inventory;
 use Spoolrail\Spoolrail\Contracts\MessageHandler;
 use Spoolrail\Spoolrail\Message;
 
-class ReserveInventory implements MessageHandler
+class ReserveInventoryHandler implements MessageHandler
 {
     public function __construct(
         private readonly Inventory $inventory,
@@ -108,7 +108,7 @@ class ReserveInventory implements MessageHandler
 A subscription can select its Spoolrail connection, Laravel queue connection, and Laravel queue independently:
 
 ```php
-Spoolrail::subscribe('orders', 'priority-orders', HandlePriorityOrder::class)
+Spoolrail::subscribe('orders', 'priority-orders', ProcessPriorityOrderHandler::class)
     ->onConnection('rabbitmq-secondary')
     ->onQueueConnection('redis')
     ->onQueue('broker-priority');
@@ -134,7 +134,7 @@ Declare Laravel queue behavior on the handler:
 use DateTimeInterface;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 
-class ReserveInventory implements MessageHandler
+class ReserveInventoryHandler implements MessageHandler
 {
     public int $tries = 5;
 
@@ -218,7 +218,7 @@ Laravel jobs already waiting for a subscription use its registered name when the
 Spoolrail::subscribe(
     'orders',
     'warehouse-orders-v2',
-    ReserveInventoryV2::class,
+    ReserveInventoryV2Handler::class,
 )->drainMessagesQueuedFor('warehouse-orders');
 ```
 

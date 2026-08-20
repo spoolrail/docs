@@ -17,11 +17,13 @@ composer require spoolrail/spoolrail
 
 Laravel discovers the package's service provider automatically.
 
-Publish `config/spoolrail.php` when you need to customize Spoolrail's settings:
+## Publish Spoolrail Files
 
 ```bash
-php artisan vendor:publish --tag=spoolrail-config
+php artisan spoolrail:install
 ```
+
+The install command publishes `config/spoolrail.php` and creates `routes/subscriptions.php`. Add `--migrations` to also publish the outbox migration. Existing files remain unchanged unless you pass `--force`, which replaces every requested file with the package version.
 
 ## Application Environment
 
@@ -79,7 +81,7 @@ This publishes through the `partner` connection. The default connection remains 
 Or assign a subscription to it:
 
 ```php
-Spoolrail::subscribe('orders', 'partner-orders', HandlePartnerOrder::class)
+Spoolrail::subscribe('orders', 'partner-orders', ProcessPartnerOrderHandler::class)
     ->onConnection('partner');
 ```
 

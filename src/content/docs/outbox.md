@@ -12,12 +12,13 @@ The policy applies to every Spoolrail publication in the application. Existing p
 
 ## Enabling the Outbox
 
-Publish the package config and outbox migration:
+Publish the package files with the outbox migration:
 
 ```bash
-php artisan vendor:publish --tag=spoolrail-config
-php artisan vendor:publish --tag=spoolrail-migrations
+php artisan spoolrail:install --migrations
 ```
+
+If you already ran the install command without this option, it leaves the existing config and routes files unchanged and publishes the migration. Later runs leave all three files unchanged. Add `--force` to replace them with the package versions; the migration keeps its existing filename.
 
 Run the published migration, then enable the policy:
 
