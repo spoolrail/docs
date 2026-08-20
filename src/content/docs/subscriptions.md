@@ -1,4 +1,7 @@
-# Subscriptions and Handlers
+---
+title: Subscriptions and Handlers
+description: Declare subscriptions, synchronize broker resources, and run message handlers through Laravel queue.
+---
 
 ## Declaring Subscriptions
 
@@ -24,7 +27,7 @@ Spoolrail::subscribe('orders', 'warehouse-orders', ReserveInventory::class);
 Spoolrail::subscribe('orders', 'analytics-orders', RecordOrderAnalytics::class);
 ```
 
-Subscription names follow the same character rules as [topic names](messages.md#topic-names), contain at most 50 characters, and must be unique across the application, including subscriptions on different connections.
+Subscription names follow the same character rules as [topic names](/messages/#topic-names), contain at most 50 characters, and must be unique across the application, including subscriptions on different connections.
 
 > The 50-character limit leaves enough room for the ownership prefix and `.fifo` suffix within AWS SQS's 80-character queue name limit.
 
@@ -44,7 +47,7 @@ Resource creation is not transactional. Spoolrail retries short-lived service an
 
 A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
 
-The [RabbitMQ](rabbitmq.md#managed-topology), [AWS SNS/SQS](snssqs.md#managed-topology), and [Google Pub/Sub](pubsub.md#managed-topology) guides describe how subscription declarations map to native resources and which management credentials they require.
+The [RabbitMQ](/rabbitmq/#managed-topology), [AWS SNS/SQS](/snssqs/#managed-topology), and [Google Pub/Sub](/pubsub/#managed-topology) guides describe how subscription declarations map to native resources and which management credentials they require.
 
 ## Removing Resources
 
@@ -59,7 +62,7 @@ Each deletion command targets the default Spoolrail connection unless you pass a
 After changing the application's ownership prefix, delete every subscription resource under the former prefix with:
 
 ```bash
-php artisan spoolrail:delete-undeclared-subscriptions --retired-prefix=warehouse-staging
+php artisan spoolrail:delete-undeclared-subscriptions --retired-prefix=warehouse-legacy
 ```
 
 You cannot pass the current ownership prefix to `--retired-prefix`.
@@ -100,9 +103,9 @@ class ReserveInventory implements MessageHandler
 }
 ```
 
-## Choosing the Transport and Queue
+## Choosing the transport and queue
 
-A subscription can select its Spoolrail connection, Laravel Queue connection, and Laravel queue independently:
+A subscription can select its Spoolrail connection, Laravel queue connection, and Laravel queue independently:
 
 ```php
 Spoolrail::subscribe('orders', 'priority-orders', HandlePriorityOrder::class)
@@ -112,20 +115,20 @@ Spoolrail::subscribe('orders', 'priority-orders', HandlePriorityOrder::class)
 ```
 
 - `onConnection` chooses the Spoolrail transport.
-- `onQueueConnection` chooses the Laravel Queue connection.
+- `onQueueConnection` chooses the Laravel queue connection.
 - `onQueue` chooses the queue within that Laravel connection.
 
 Omitted values use the corresponding application defaults.
 
-### Using the Sync Queue Connection
+### Using the sync queue connection
 
-With Laravel's `sync` Queue connection, Spoolrail runs the handler before telling the broker that the delivery is complete. If the handler throws or consumption is interrupted first, Spoolrail does not acknowledge the delivery, so the broker may deliver the same message again.
+With Laravel's `sync` queue connection, Spoolrail runs the handler before telling the broker that the delivery is complete. If the handler throws or consumption is interrupted first, Spoolrail does not acknowledge the delivery, so the broker may deliver the same message again.
 
-Prefer an asynchronous Queue connection in production. Spoolrail can acknowledge the broker delivery as soon as Laravel Queue accepts the message, while Laravel Queue takes responsibility for running the handler and managing retries, timeouts, concurrency, and terminal failures.
+Prefer an asynchronous queue connection in production. Spoolrail can acknowledge the broker delivery as soon as Laravel queue accepts the message, while Laravel queue takes responsibility for running the handler and managing retries, timeouts, concurrency, and terminal failures.
 
-## Queue Attempts, Timeouts, and Middleware
+## Configuring queue attempts, timeouts, and middleware
 
-Declare Laravel Queue behavior on the handler:
+Declare Laravel queue behavior on the handler:
 
 ```php
 use DateTimeInterface;
@@ -163,7 +166,7 @@ class ReserveInventory implements MessageHandler
 
 Spoolrail supports `tries`, `backoff`, `maxExceptions`, `timeout`, and `failOnTimeout` properties; `tries()`, `backoff()`, and `retryUntil()` methods; and a `middleware(Message $message)` method. Laravel 13 queue policy attributes are also supported.
 
-Prefer methods when attempts or backoff are dynamic. Spoolrail captures Queue policy and middleware when it hands the message to Laravel Queue, before the handler constructor runs. Changes apply only to messages handed off afterward; existing queued jobs keep their captured policy.
+Prefer methods when attempts or backoff are dynamic. Spoolrail captures queue policy and middleware when it hands the message to Laravel queue, before the handler constructor runs. Changes apply only to messages handed off afterward; existing queued jobs keep their captured policy.
 
 ## Handling Terminal Failures
 
@@ -204,7 +207,7 @@ A RabbitMQ subscription queue remains on the connection and topic where it was c
 1. Add a replacement subscription with a new name and the desired topic and Spoolrail connection. Keep the original subscription declared.
 2. Update publishers to use the replacement's topic and Spoolrail connection.
 3. Keep the original subscription running until its RabbitMQ queue is empty.
-4. Remove the original declaration. If Laravel Queue may still contain jobs for its name, add the mapping described in [Renaming a Subscription](#renaming-a-subscription) to the replacement at the same time.
+4. Remove the original declaration. If Laravel queue may still contain jobs for its name, add the mapping described in [Renaming a Subscription](#renaming-a-subscription) to the replacement at the same time.
 5. [Remove the original RabbitMQ subscription resource](#removing-resources) from its original connection.
 
 ## Renaming a Subscription
@@ -221,6 +224,6 @@ Spoolrail::subscribe(
 
 The former name becomes reserved and cannot also be an active subscription.
 
-This mapping applies only to work already handed to Laravel Queue. It does not move messages still buffered in the old RabbitMQ queue. Drain that queue with the old consumer, or decide to discard it, before running the subscription cleanup command.
+This mapping applies only to work already handed to Laravel queue. It does not move messages still buffered in the old RabbitMQ queue. Drain that queue with the old consumer, or decide to discard it, before running the subscription cleanup command.
 
 Keep the mapping until every queued, delayed, retryable, in-flight, or failed Laravel job using the former name has completed or been discarded.

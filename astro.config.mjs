@@ -1,0 +1,74 @@
+import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
+import starlightThemeBlack from "starlight-theme-black";
+
+import spoolrailMark from "./src/assets/spoolrail-mark.png";
+
+export default defineConfig({
+  site: "https://spoolrail.com",
+  integrations: [
+    starlight({
+      title: "Spoolrail",
+      description:
+        "Broker-backed messaging for Laravel, with Laravel Queue handling message execution.",
+      head: [
+        {
+          tag: "script",
+          content: `
+            if (localStorage.getItem('starlight-theme') === null) {
+              localStorage.setItem('starlight-theme', 'dark');
+            }
+          `,
+        },
+      ],
+      favicon: "/favicon.svg",
+      logo: {
+        src: spoolrailMark,
+        alt: "Spoolrail",
+      },
+      editLink: {
+        baseUrl: "https://github.com/spoolrail/docs/edit/main/",
+      },
+      social: [
+        {
+          icon: "github",
+          label: "Spoolrail on GitHub",
+          href: "https://github.com/spoolrail/spoolrail",
+        },
+      ],
+      customCss: ["./src/styles/spoolrail.css"],
+      plugins: [
+        starlightThemeBlack({
+          navLinks: [
+            { label: "Overview", link: "/" },
+            { label: "Documentation", link: "/installation/" },
+          ],
+        }),
+      ],
+      sidebar: [
+        {
+          label: "Start Here",
+          items: ["index", "installation"],
+        },
+        {
+          label: "Core",
+          items: [
+            "messages",
+            "outbox",
+            "subscriptions",
+            "consumers",
+            "delivery-guarantees",
+          ],
+        },
+        {
+          label: "Drivers",
+          items: ["rabbitmq", "snssqs", "pubsub"],
+        },
+        {
+          label: "Advanced",
+          items: ["testing", "extending"],
+        },
+      ],
+    }),
+  ],
+});

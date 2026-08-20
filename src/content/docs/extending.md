@@ -1,4 +1,7 @@
-# Custom Drivers
+---
+title: Custom Drivers
+description: Add a custom broker driver and optional topology management to Spoolrail.
+---
 
 ## Registering a Driver
 
@@ -121,9 +124,18 @@ use Spoolrail\Spoolrail\Contracts\TopologyPlan;
 
 class AcmeDriver implements CanManageTopology
 {
-    public function planSync(array $subscriptions, string $ownershipPrefix): TopologyPlan {}
-    public function undeclaredSubscriptionResourceNames(array $subscriptions, string $ownershipPrefix): array {}
+    public function planSync(
+        array $subscriptions,
+        string $ownershipPrefix,
+    ): TopologyPlan {}
+
+    public function undeclaredSubscriptionResourceNames(
+        array $subscriptions,
+        string $ownershipPrefix,
+    ): array {}
+
     public function deleteSubscription(string $physicalName): void {}
+
     public function deleteTopic(string $topic): void {}
 }
 ```

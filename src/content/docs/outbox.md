@@ -1,9 +1,12 @@
-# Transactional Outbox
+---
+title: Transactional Outbox
+description: Commit broker publications with database changes and run the outbox dispatcher.
+---
 
 Spoolrail publishes directly to the selected broker connection by default. Enable the transactional outbox when a database change and its publication must commit or roll back together.
 
 > [!NOTE]
-> The transactional outbox is optional. It coordinates publication with a database transaction; it is not a general fault-tolerance measure. See [Publication Retries](messages.md#publication-retries) for handling transient broker failures.
+> The transactional outbox is optional. It coordinates publication with a database transaction; it is not a general fault-tolerance measure. See [Publication Retries](/messages/#publication-retries) for handling transient broker failures.
 
 The policy applies to every Spoolrail publication in the application. Existing publishing code keeps using `Spoolrail::publish(...)` or `Spoolrail::connection(...)->publish(...)`.
 
@@ -99,7 +102,10 @@ The retained row records a short `last_error`, and its `updated_at` value shows 
 ```php
 'outbox' => [
     'enabled' => env('SPOOLRAIL_OUTBOX', false),
-    'database_connection' => env('SPOOLRAIL_OUTBOX_DATABASE_CONNECTION', env('DB_CONNECTION', 'sqlite')),
+    'database_connection' => env(
+        'SPOOLRAIL_OUTBOX_DATABASE_CONNECTION',
+        env('DB_CONNECTION', 'sqlite'),
+    ),
     'concurrency' => env('SPOOLRAIL_OUTBOX_CONCURRENCY', 1),
     'exception_cooldown' => 300,
 ],

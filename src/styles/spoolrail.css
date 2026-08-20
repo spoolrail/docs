@@ -1,0 +1,116 @@
+:root {
+  --spoolrail-orange: #e94f2f;
+  --sl-content-width: 50rem;
+  --sl-color-text-accent: var(--spoolrail-orange);
+  --sl-color-accent-high: var(--spoolrail-orange);
+  --ring: color-mix(in oklab, var(--spoolrail-orange) 70%, transparent);
+}
+
+[data-has-sidebar][data-has-toc] .main-pane {
+  max-width: var(--sl-content-width);
+}
+
+@media (min-width: 80rem) and (max-width: 89.999rem) {
+  .right-sidebar-container {
+    display: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  --primary: #ff6a4b;
+  --primary-foreground: #171717;
+  --sl-color-text-accent: #ff8269;
+  --sl-color-accent-high: #ff8269;
+}
+
+:root[data-theme="light"] {
+  --primary: #c83c20;
+  --primary-foreground: #ffffff;
+  --sl-color-text-accent: #b9341b;
+  --sl-color-accent-high: #b9341b;
+}
+
+.hero-image img {
+  width: min(18rem, 58vw);
+  height: auto;
+  filter: drop-shadow(
+    0 1.5rem 3rem color-mix(in oklab, var(--spoolrail-orange) 20%, transparent)
+  );
+}
+
+.text-highlight {
+  color: var(--spoolrail-orange);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-has-hero] .hero-title-container {
+    animation: landing-rise 540ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+  }
+
+  html[data-has-hero] .hero .tagline {
+    animation: landing-rise 540ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  }
+
+  html[data-has-hero] .hero .actions {
+    animation: landing-rise 540ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
+  }
+
+  html[data-has-hero] .hero-image {
+    animation: landing-mark-in 680ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
+  }
+
+  html[data-has-hero] .hero-image img {
+    animation: landing-mark-drift 8s ease-in-out 1s infinite;
+  }
+
+  html[data-has-hero] .hero .sl-link-button {
+    transition:
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  html[data-has-hero] .hero .sl-link-button:hover {
+    transform: translateY(-2px);
+  }
+
+  html[data-has-hero] .hero .sl-link-button:active {
+    transform: translateY(0);
+  }
+
+  html[data-has-hero] .sl-heading-wrapper:has(#supported-drivers) + ul > li {
+    transition: transform 180ms ease;
+  }
+
+  html[data-has-hero]
+    .sl-heading-wrapper:has(#supported-drivers)
+    + ul
+    > li:has(a:hover) {
+    transform: translateX(0.25rem);
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@keyframes landing-mark-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.96);
+  }
+}
+
+@keyframes landing-mark-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-0.25rem);
+  }
+}

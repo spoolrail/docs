@@ -1,4 +1,7 @@
-# Running Consumers
+---
+title: Running Consumers
+description: Run, recover, deploy, and supervise Spoolrail consumers.
+---
 
 ## Starting Consumers
 
@@ -20,15 +23,15 @@ Use a separate root command for each connection that the application consumes. T
 php artisan spoolrail warehouse-orders
 ```
 
-Spoolrail hands each delivery to the subscription's configured Laravel Queue, where the message handler runs.
+Spoolrail hands each delivery to the subscription's configured Laravel queue, where the message handler runs.
 
 ## Message Delivery
 
-Spoolrail considers a broker delivery complete only after the selected Laravel Queue accepts it. If the Queue handoff fails or the consumer stops first, the message remains unacknowledged and the broker will redeliver it.
+Spoolrail considers a broker delivery complete only after the selected Laravel queue accepts it. If the queue handoff fails or the consumer stops first, the message remains unacknowledged and the broker will redeliver it.
 
-Spoolrail retains each successful Queue handoff for the configured idempotency window. If an acknowledgment does not reach the broker and the broker redelivers the message during that window, Spoolrail acknowledges the redelivery without adding another Laravel job.
+Spoolrail retains each successful queue handoff for the configured idempotency window. If an acknowledgment does not reach the broker and the broker redelivers the message during that window, Spoolrail acknowledges the redelivery without adding another Laravel job.
 
-Once Laravel Queue accepts the message, Laravel Queue owns handler execution, retries, timeouts, and terminal failure.
+Once Laravel queue accepts the message, Laravel queue owns handler execution, retries, timeouts, and terminal failure.
 
 Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. Use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
 

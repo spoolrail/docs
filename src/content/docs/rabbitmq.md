@@ -1,4 +1,7 @@
-# RabbitMQ
+---
+title: RabbitMQ
+description: Configure RabbitMQ connectivity, TLS, acknowledgments, and managed topology.
+---
 
 The RabbitMQ driver publishes each topic to a fanout exchange and gives every Spoolrail subscription its own queue.
 
@@ -108,7 +111,7 @@ Configure Management API trust separately by replacing its `ca_file` value:
 
 ## Managed Topology
 
-After declaring subscriptions, run [topology synchronization](subscriptions.md#synchronizing-topology) with the Management API credentials configured for the connection. For each declaration, Spoolrail creates or verifies:
+After declaring subscriptions, run [topology synchronization](/subscriptions/#synchronizing-topology) with the Management API credentials configured for the connection. For each declaration, Spoolrail creates or verifies:
 
 - a durable fanout exchange named `{topic}`;
 - a durable queue named `{ownership-prefix}-{subscription}`; and

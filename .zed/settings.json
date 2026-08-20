@@ -1,0 +1,39 @@
+{
+  "file_types": {
+    "Markdown": ["md", "mdx"]
+  },
+  "languages": {
+    "Astro": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "Markdown": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "JSON": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "JSONC": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "JavaScript": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "TypeScript": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "YAML": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "CSS": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    }
+  }
+}

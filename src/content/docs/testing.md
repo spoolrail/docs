@@ -1,4 +1,7 @@
-# Testing
+---
+title: Testing
+description: Test Spoolrail publications and handlers with the array connection or broker integrations.
+---
 
 ## Using the Array Connection
 
@@ -12,7 +15,7 @@ config([
 ]);
 ```
 
-This sends messages through the in-memory Spoolrail connection, keeps handoff idempotency state in memory, and runs handlers through Laravel's synchronous Queue connection.
+This sends messages through the in-memory Spoolrail connection, keeps handoff idempotency state in memory, and runs handlers through Laravel's synchronous queue connection.
 
 Declare subscriptions before publishing. Publish and consume in the same test process; a separate `php artisan` process cannot see the in-memory messages.
 
@@ -56,7 +59,7 @@ test('reserves inventory for an order message', function (): void {
 
 ## Testing Queued Handling
 
-When a subscription uses an asynchronous Queue connection:
+When a subscription uses an asynchronous queue connection:
 
 1. publish through the array Spoolrail connection;
 2. run `spoolrail` with the subscription name;

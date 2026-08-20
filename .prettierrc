@@ -1,0 +1,23 @@
+{
+  "plugins": ["prettier-plugin-astro"],
+  "proseWrap": "preserve",
+  "overrides": [
+    {
+      "files": ["**/*.astro"],
+      "options": {
+        "parser": "astro"
+      }
+    },
+    {
+      "files": [
+        "**/.vscode/extensions.json",
+        "**/.vscode/settings.json",
+        "**/.zed/settings.json"
+      ],
+      "options": {
+        "parser": "json",
+        "trailingComma": "none"
+      }
+    }
+  ]
+}

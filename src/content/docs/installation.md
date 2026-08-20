@@ -1,8 +1,11 @@
-# Installation and Configuration
+---
+title: Installation and Configuration
+description: Install Spoolrail and configure connections, ownership, and driver prerequisites.
+---
 
 ## Requirements
 
-Spoolrail requires PHP 8.4 or later with the PCNTL extension, Laravel 12 or later, and a configured Laravel Queue connection.
+Spoolrail requires PHP 8.4 or later with the PCNTL extension, Laravel 12 or later, and a configured Laravel queue connection.
 
 ## Installation
 
@@ -26,16 +29,16 @@ Select the default connection and set a stable ownership prefix for subscription
 
 ```dotenv
 SPOOLRAIL_CONNECTION=rabbitmq
-SPOOLRAIL_PREFIX=warehouse-production
+SPOOLRAIL_PREFIX=warehouse
 ```
 
 `SPOOLRAIL_CONNECTION` names a connection from `config/spoolrail.php`. The bundled broker connections are `rabbitmq`, `snssqs`, and `pubsub`.
 
 `SPOOLRAIL_PREFIX` namespaces subscription resources owned by the application. Set it before consuming messages or managing subscriptions, and keep it stable. Publisher-only applications do not need it.
 
-Use a short, stable identifier for the application and environment. Keep it independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must contain at most 24 characters (letters, digits, hyphens, and underscores are allowed).
+Use a short, stable identifier for the application. Keep it independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must contain at most 24 characters (letters, digits, hyphens, and underscores are allowed).
 
-Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:sync` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](subscriptions.md#removing-resources).
+Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:sync` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](/subscriptions/#removing-resources).
 
 The ownership prefix is reserved for Spoolrail-managed subscription resources. Undeclared-subscription cleanup treats every resource in that namespace as application-owned and may delete it when no active subscription declares it.
 
@@ -43,9 +46,9 @@ The ownership prefix is reserved for Spoolrail-managed subscription resources. U
 
 Each broker driver has its own client dependency and environment prerequisites. Follow the guide for every driver the application uses:
 
-- [RabbitMQ](rabbitmq.md#driver-prerequisites)
-- [AWS SNS/SQS](snssqs.md#driver-prerequisites)
-- [Google Pub/Sub](pubsub.md#driver-prerequisites)
+- [RabbitMQ](/rabbitmq/#driver-prerequisites)
+- [AWS SNS/SQS](/snssqs/#driver-prerequisites)
+- [Google Pub/Sub](/pubsub/#driver-prerequisites)
 
 ## Multiple Connections
 
@@ -82,8 +85,8 @@ Spoolrail::subscribe('orders', 'partner-orders', HandlePartnerOrder::class)
 
 ## Transactional Outbox
 
-Direct broker publication is the default. See [Transactional Outbox](outbox.md) when publications must commit atomically with database changes.
+Direct broker publication is the default. See [Transactional Outbox](/outbox/) when publications must commit atomically with database changes.
 
 ## Array Connection
 
-The `array` connection is an in-process transport for tests. It cannot exchange messages between PHP processes. See [Testing](testing.md).
+The `array` connection is an in-process transport for tests. It cannot exchange messages between PHP processes. See [Testing](/testing/).

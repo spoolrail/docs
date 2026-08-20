@@ -1,4 +1,7 @@
-# Publishing Messages
+---
+title: Publishing Messages
+description: Create and publish Spoolrail messages, headers, and ordering keys.
+---
 
 ## Creating a Message
 
@@ -46,13 +49,13 @@ $published = Spoolrail::connection('partner')->publish(
 
 A publisher does not declare or select subscriptions. Every subscription already bound to the topic receives its own copy.
 
-By default, Spoolrail publishes immediately, including inside a database transaction. Enable the [Transactional Outbox](outbox.md) when a database change and publication must be atomic. With the outbox enabled, the publishing call stores a pending publication without contacting the broker. The transaction commits both the database change and publication, or rolls back both. A separate dispatcher publishes pending publications to the broker.
+By default, Spoolrail publishes immediately, including inside a database transaction. Enable the [Transactional Outbox](/outbox/) when a database change and publication must be atomic. With the outbox enabled, the publishing call stores a pending publication without contacting the broker. The transaction commits both the database change and publication, or rolls back both. A separate dispatcher publishes pending publications to the broker.
 
 ## Publication Retries
 
 By default, Spoolrail retries broker publication failures up to two times, waiting one second between attempts, unless the broker rejects the publication for a permanent reason.
 
-If the broker accepts a message but its response does not reach Spoolrail due to a transient failure, a retry can publish the same message again. Spoolrail [deduplicates recent repeats during Queue handoff](consumers.md#message-delivery).
+If the broker accepts a message but its response does not reach Spoolrail due to a transient failure, a retry can publish the same message again. Spoolrail [deduplicates recent repeats during queue handoff](/consumers/#message-delivery).
 
 Retries can extend how long direct publishing waits during a broker failure. Configure them under `spoolrail.publisher_retries`.
 
@@ -96,7 +99,7 @@ Drivers use the key as follows:
 - AWS standard forwards a supplied key to SQS for fair-queue tenant grouping without ordering or deduplication.
 - Google Pub/Sub keeps messages with the same key in one ordered lane when ordering is enabled and uses one topic-wide lane when the key is omitted. When ordering is disabled, it still forwards a supplied key without making an ordering promise.
 
-Ordering-capable transports preserve broker-to-Laravel-Queue handoff order within a group, not across groups or subscriptions. Laravel Queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](snssqs.md#fifo-mode-and-ordering) and [Pub/Sub Message Ordering](pubsub.md#message-ordering) for provider-specific behavior and throughput limits.
+Ordering-capable transports preserve handoff order from the broker to Laravel queue within a group, not across groups or subscriptions. Laravel queue concurrency and retries may change handler execution or completion order. See [AWS FIFO Mode and Ordering](/snssqs/#fifo-mode-and-ordering) and [Pub/Sub Message Ordering](/pubsub/#message-ordering) for provider-specific behavior and throughput limits.
 
 ## Topic Names
 
@@ -143,6 +146,6 @@ $message->transport?->orderingKey;
 
 RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key. They report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group. Google Pub/Sub reports the Pub/Sub message ID, service publication time, delivery-attempt evidence when available, and ordering key.
 
-`redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel Queue attempts or establish whether the handler has already completed.
+`redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel queue attempts or establish whether the handler has already completed.
 
-Laravel Queue retries retain the context captured during the successful broker-to-Queue handoff. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.
+Laravel queue retries retain the context captured during the successful handoff from the broker to Laravel queue. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.

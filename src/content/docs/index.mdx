@@ -1,0 +1,247 @@
+---
+title: Message broker for Laravel
+description: Laravel-native message brokering with driver-agnostic API.
+sidebar:
+  label: Overview
+template: splash
+hero:
+  title: Spoolrail
+  layout: media-right
+  tagline: Laravel-native message brokering for distributed systems, with one API across <strong class="text-highlight">RabbitMQ</strong>, <strong class="text-highlight">AWS SNS/SQS</strong>, and <strong class="text-highlight">Google Pub/Sub</strong>.
+  image:
+    file: ../../assets/spoolrail-mark.png
+  actions:
+    - text: Documentation
+      link: /installation/
+      icon: right-arrow
+      variant: primary
+    - text: Quick start
+      link: "#quick-start"
+      variant: secondary
+---
+
+import { TabItem, Tabs } from "@astrojs/starlight/components";
+
+## Introduction
+
+Spoolrail lets Laravel applications exchange messages through a broker.
+
+Message brokers let different apps communicate without being directly connected. One app sends a message, the broker holds it, and another app picks it up later. Think of it like leaving a note for your coworker instead of waiting around to tell them in person.
+
+This prevents the brittleness of direct HTTP calls, where one app has to wait for the other. So, whether the receiving app is offline or the system is overwhelmed by a sudden spike in traffic, messages wait safely in a queue until the system is ready to process them.
+
+Message brokers are common in microservices and service-oriented architectures to handle async communication and keep things loosely coupled.
+
+## Message processing in a Laravel queue
+
+Publishing applications send messages to topics. Spoolrail uses fanout delivery so every application subscribed to a topic gets its own copy. Spoolrail hands each copy to the Laravel queue selected by the receiving application's subscription.
+
+This handoff separates broker delivery from handler execution. After <strong class="text-highlight">Laravel queue accepts the message</strong>, it owns handler execution, retries, and failure.
+
+## Delivery Guarantees
+
+By default, Spoolrail delivers every published message <strong class="text-highlight">once</strong> and <strong class="text-highlight">in order</strong> to each subscription's Laravel queue. This guarantee covers ordinary publication and broker redeliveries.
+
+Some drivers let you disable one or more guarantees to raise the throughput limit. Read more about [delivery guarantees](/delivery-guarantees/).
+
+## Package Goals
+
+Message broker systems are powerful, but that power can lead to complexity. There are no plans to chase every feature or configuration knob across drivers with this package.
+
+The goal is to focus on what’s essential for every broker implementation, delivering an elegant, driver-agnostic, and delightful API — even if that means leaving some bells and whistles behind.
+
+## Supported Drivers
+
+- 🐇 [RabbitMQ](/rabbitmq/)
+- 📦 [AWS SNS/SQS](/snssqs/)
+- ☁️ [Google Pub/Sub](/pubsub/)
+
+## Quick Start
+
+Choose a driver below. The remaining steps are the same for all three drivers.
+
+### 1. Install Spoolrail
+
+```bash
+composer require spoolrail/spoolrail
+```
+
+### 2. Configure a Driver
+
+Set a stable ownership prefix for the app in `.env`:
+
+```dotenv
+SPOOLRAIL_PREFIX=warehouse
+```
+
+The ownership prefix distinguishes this application's subscription queues from queues owned by other applications.
+
+<Tabs>
+  <TabItem label="RabbitMQ">
+    <div>
+      Install the RabbitMQ client:
+
+      ```bash
+      composer require php-amqplib/php-amqplib:^3.7.4
+      ```
+
+      Select the RabbitMQ connection and configure the broker in `.env`:
+
+      ```dotenv
+      SPOOLRAIL_CONNECTION=rabbitmq
+
+      RABBITMQ_HOST=127.0.0.1
+      RABBITMQ_USERNAME=spoolrail
+      RABBITMQ_PASSWORD=secret
+      RABBITMQ_VHOST=spoolrail
+
+      RABBITMQ_MANAGEMENT_URL=http://127.0.0.1:15672
+      ```
+
+      This walkthrough requires RabbitMQ 4.3 or later with the Management plugin enabled. See the [RabbitMQ driver guide](/rabbitmq/) for TLS and other connection settings.
+    </div>
+
+  </TabItem>
+
+  <TabItem label="AWS SNS/SQS">
+    <div>
+      Install the AWS SDK:
+
+      ```bash
+      composer require aws/aws-sdk-php:^3.392.0
+      ```
+
+      Select the AWS SNS/SQS connection and configure the account in `.env`:
+
+      ```dotenv
+      SPOOLRAIL_CONNECTION=snssqs
+
+      AWS_ACCESS_KEY_ID=<your-key-id>
+      AWS_SECRET_ACCESS_KEY=<your-secret-access-key>
+      AWS_DEFAULT_REGION=us-east-1
+      AWS_ACCOUNT_ID=<your-account-id>
+      ```
+
+      See the [AWS SNS/SQS driver guide](/snssqs/) for required IAM permissions or when the application uses temporary credentials, an IAM role, or a compatible local service.
+    </div>
+
+  </TabItem>
+
+  <TabItem label="Google Pub/Sub">
+    <div>
+      Install the Google Cloud Pub/Sub client:
+
+      ```bash
+      composer require google/cloud-pubsub:^2.20.0
+      ```
+
+      Select the Google Pub/Sub connection and configure the project in `.env`:
+
+      ```dotenv
+      SPOOLRAIL_CONNECTION=pubsub
+
+      GOOGLE_CLOUD_PROJECT=warehouse-production
+      SPOOLRAIL_GOOGLE_CREDENTIALS=/run/secrets/warehouse-pubsub.json
+      SPOOLRAIL_GOOGLE_PUBSUB_ENDPOINT=europe-west1-pubsub.googleapis.com:443
+      ```
+
+      See the [Google Pub/Sub driver guide](/pubsub/) for required IAM permissions, Application Default Credentials, or the global endpoint.
+    </div>
+
+  </TabItem>
+</Tabs>
+
+### 3. Create a Handler
+
+Handlers implement `MessageHandler`:
+
+```php
+<?php
+
+namespace App\Spoolrail\Handlers;
+
+use App\Services\Inventory;
+use Spoolrail\Spoolrail\Contracts\MessageHandler;
+use Spoolrail\Spoolrail\Message;
+
+class ReserveInventory implements MessageHandler
+{
+    public function __construct(
+        private readonly Inventory $inventory,
+    ) {}
+
+    public function handle(Message $message): void
+    {
+        $this->inventory->reserve(
+            (int) $message->payload['order_id'],
+        );
+    }
+}
+```
+
+### 4. Declare a Subscription
+
+Create `routes/subscriptions.php`:
+
+```php
+<?php
+
+use App\Spoolrail\Handlers\ReserveInventory;
+use Spoolrail\Spoolrail\Facades\Spoolrail;
+
+Spoolrail::subscribe(
+    topic: 'orders',
+    name: 'warehouse-orders',
+    handler: ReserveInventory::class,
+);
+```
+
+Spoolrail loads this file automatically.
+
+### 5. Create the Broker Resources
+
+```bash
+php artisan spoolrail:sync
+```
+
+Run this command during deployment whenever subscription declarations change.
+
+### 6. Start the Workers
+
+Run consumers for every subscription on the default Spoolrail connection:
+
+```bash
+php artisan spoolrail
+```
+
+Make sure Laravel queue workers are running for the connections and queues selected by your subscriptions.
+
+### 7. Publish a Message
+
+```php
+use Spoolrail\Spoolrail\Facades\Spoolrail;
+use Spoolrail\Spoolrail\Message;
+
+$published = Spoolrail::publish(
+    'orders',
+    Message::make('order.created', [
+        'order_id' => $order->id,
+    ]),
+);
+```
+
+The returned message contains the UUID and UTC publication time that subscribers receive.
+
+## Where to Go Next
+
+- [Installation and Configuration](/installation/)
+- [Publishing Messages](/messages/)
+- [Delivery Guarantees](/delivery-guarantees/)
+- [Transactional Outbox](/outbox/)
+- [Subscriptions and Handlers](/subscriptions/)
+- [Running Consumers](/consumers/)
+- [RabbitMQ](/rabbitmq/)
+- [AWS SNS/SQS](/snssqs/)
+- [Google Pub/Sub](/pubsub/)
+- [Testing](/testing/)
+- [Custom Drivers](/extending/)
