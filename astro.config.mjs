@@ -13,6 +13,55 @@ export default defineConfig({
         "Broker-backed messaging for Laravel, with Laravel Queue handling message execution.",
       head: [
         {
+          tag: "meta",
+          attrs: {
+            property: "og:image",
+            content: "https://spoolrail.com/social-card.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:type",
+            content: "image/png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:width",
+            content: "2400",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:height",
+            content: "1260",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image:alt",
+            content: "Spoolrail landing page hero with the logo and tagline.",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image",
+            content: "https://spoolrail.com/social-card.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image:alt",
+            content: "Spoolrail landing page hero with the logo and tagline.",
+          },
+        },
+        {
           tag: "script",
           content: `
             if (localStorage.getItem('starlight-theme') === null) {
