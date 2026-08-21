@@ -54,7 +54,7 @@ SQS consumers long-poll for 20 seconds, so any custom `request_timeout` value mu
 
 `receive_batch_size` controls how many messages Spoolrail fetches from the SQS queue per receive. Fetching several messages at once avoids a broker round trip for each message. It defaults to `10`, the AWS maximum. Set it to `1` for one-at-a-time receives. SQS returns up to the configured number without waiting for a full batch to accumulate. Spoolrail hands returned messages to Laravel queue one at a time.
 
-After SQS returns a batch, the visibility timeout controls how long an undeleted message remains unavailable for another receive from that subscription's queue. The default `visibility_timeout` is `30` seconds. See AWS's [`VisibilityTimeout` attribute documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html) for supported values. Spoolrail deletes each message after handing it to Laravel queue, so later worker execution does not use this time. Increase the timeout when queue handoff may take longer, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:sync` after changing it.
+After SQS returns a batch, the visibility timeout controls how long an undeleted message remains unavailable for another receive from that subscription's queue. The default `visibility_timeout` is `30` seconds. See AWS's [`VisibilityTimeout` attribute documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html) for supported values. Spoolrail deletes each message after handing it to Laravel queue, so later worker execution does not use this time. Increase the timeout when queue handoff may take longer, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:ensure-topology` after changing it.
 
 ## FIFO Mode and Ordering
 
@@ -80,10 +80,10 @@ In standard mode, ordering keys enable [fair-queue grouping](https://docs.aws.am
 
 AWS cannot convert an existing FIFO topic or queue to standard. Migrate without losing messages:
 
-1. Keep the FIFO connection configured. Add a separately named standard connection with `'fifo' => false`, declare replacement subscriptions with new names, and run `spoolrail:sync`.
+1. Keep the FIFO connection configured. Add a separately named standard connection with `'fifo' => false`, declare replacement subscriptions with new names, and run `spoolrail:ensure-topology`.
 2. Switch publishers to the standard connection. Keep the FIFO connection available for pending outbox publications.
 3. Continue the FIFO consumers until their SQS deliveries and related Laravel queue work are drained. Keep the route while you still need to accept delayed SNS delivery retries.
-4. Remove the FIFO declarations, then delete their receive resources and unused topic using the [cleanup commands](/subscriptions/#removing-resources).
+4. Remove the FIFO declarations, then delete their subscriptions and unused topic using the [cleanup commands](/subscriptions/#removing-resources).
 5. Remove the FIFO connection after its pending outbox publications and resources are gone.
 
 Changing `fifo` on the existing connection before draining it redirects logical names to replacement resources and can strand old work.

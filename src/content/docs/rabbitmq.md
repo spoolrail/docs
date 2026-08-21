@@ -2,7 +2,7 @@
 title: RabbitMQ
 ---
 
-The RabbitMQ driver publishes each topic to a fanout exchange and gives every Spoolrail subscription its own queue.
+The RabbitMQ driver publishes each topic to a fanout exchange and routes each message to every Spoolrail subscription.
 
 ## Driver Prerequisites
 
@@ -113,7 +113,7 @@ Configure Management API trust separately by replacing its `ca_file` value:
 After declaring subscriptions, run [topology synchronization](/subscriptions/#synchronizing-topology) with the Management API credentials configured for the connection. For each declaration, Spoolrail creates or verifies:
 
 - a durable fanout exchange named `{topic}`;
-- a durable queue named `{ownership-prefix}-{subscription}`; and
-- a binding from the topic exchange to the subscription queue.
+- a durable subscription named `{ownership-prefix}-{subscription}`; and
+- a binding from the topic exchange to the subscription.
 
-RabbitMQ's virtual-host `default_queue_type` determines whether newly created subscription queues are classic or quorum. Both queue types are supported. Quorum queues must have unlimited delivery attempts. If synchronization reports an incompatible exchange, queue, binding, or delivery limit, fix that resource or choose a new logical name before running the command again.
+RabbitMQ's virtual-host `default_queue_type` determines whether newly created subscriptions are classic or quorum. Both types are supported. Quorum subscriptions must have unlimited delivery attempts. If synchronization reports an incompatible exchange, subscription, binding, or delivery limit, fix that resource or choose a new logical name before running the command again.

@@ -27,7 +27,7 @@ Spoolrail lets Laravel applications exchange messages through a broker.
 
 Message brokers let different apps communicate without being directly connected. One app sends a message, the broker holds it, and another app picks it up later. Think of it like leaving a note for your coworker instead of waiting around to tell them in person.
 
-This prevents the brittleness of direct HTTP calls, where one app has to wait for the other. So, whether the receiving app is offline or the system is overwhelmed by a sudden spike in traffic, messages wait safely in a queue until the system is ready to process them.
+This prevents the brittleness of direct HTTP calls, where one app has to wait for the other. So, whether the receiving app is offline or the system is overwhelmed by a sudden spike in traffic, messages wait safely for each subscription until its application is ready to process them.
 
 Message brokers are common in microservices and service-oriented architectures to handle async communication and keep things loosely coupled.
 
@@ -208,7 +208,7 @@ Spoolrail loads this file automatically.
 ### 7. Create the Broker Resources
 
 ```bash
-php artisan spoolrail:sync
+php artisan spoolrail:ensure-topology
 ```
 
 Run this command during deployment whenever subscription declarations change.

@@ -43,7 +43,7 @@ Publish `config/spoolrail.php` to configure the bundled connection:
 
 `receive_batch_size` controls how many messages Spoolrail fetches from Pub/Sub per receive. Fetching several messages at once avoids a broker round trip for each message. It defaults to `10` and accepts values from `1` through `1,000`. Set it to `1` for one-at-a-time receives. Pub/Sub may return fewer messages than requested, and each response is limited to 10 MB. Spoolrail hands returned messages to Laravel queue one at a time.
 
-After Pub/Sub returns a batch, the acknowledgment deadline controls how long an unacknowledged message remains unavailable for another pull from that subscription. The default `acknowledgment_deadline` is `30` seconds. See Google's [acknowledgment deadline documentation](https://cloud.google.com/pubsub/docs/subscription-properties) for supported values. Spoolrail acknowledges each message after handing it to Laravel queue, so later worker execution does not use this time. Increase the deadline when queue handoff may take longer, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:sync` after changing it.
+After Pub/Sub returns a batch, the acknowledgment deadline controls how long an unacknowledged message remains unavailable for another pull from that subscription. The default `acknowledgment_deadline` is `30` seconds. See Google's [acknowledgment deadline documentation](https://cloud.google.com/pubsub/docs/subscription-properties) for supported values. Spoolrail acknowledges each message after handing it to Laravel queue, so later worker execution does not use this time. Increase the deadline when queue handoff may take longer, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:ensure-topology` after changing it.
 
 ## Application Default Credentials
 
@@ -73,7 +73,7 @@ When the application does not require guaranteed ordering, set `'message_orderin
 You do not need to remove ordering keys from existing publication calls. Pub/Sub accepts the keys, but does not guarantee their delivery order for subscriptions with message ordering disabled.
 :::
 
-The `message_ordering` setting is fixed when a subscription is created. If `spoolrail:sync` finds an existing subscription with a different value, preflight fails before changing topology. Declare a replacement subscription with a new name, drain the original, and remove it through the normal [resource cleanup](/subscriptions/#removing-resources) workflow.
+The `message_ordering` setting is fixed when a subscription is created. If `spoolrail:ensure-topology` finds an existing subscription with a different value, preflight fails before changing topology. Declare a replacement subscription with a new name, drain the original, and remove it through the normal [resource cleanup](/subscriptions/#removing-resources) workflow.
 
 ## Exactly-Once Delivery
 
@@ -81,7 +81,7 @@ Exactly-once delivery is enabled by default to prevent duplicate broker deliveri
 
 Set `'exactly_once' => false` to use ordinary at-least-once delivery when lower latency or maximum throughput matters more than duplicate-delivery protection. Note that [regional quotas](https://docs.cloud.google.com/pubsub/quotas) only become relevant when Pub/Sub sends your application more than 180,000 messages per minute.
 
-Exactly-once delivery is not fixed when a subscription is created. Change `exactly_once` and run `spoolrail:sync` to update existing subscriptions in place.
+Exactly-once delivery is not fixed when a subscription is created. Change `exactly_once` and run `spoolrail:ensure-topology` to update existing subscriptions in place.
 
 ## Managed Topology
 

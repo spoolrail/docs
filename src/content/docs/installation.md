@@ -37,7 +37,7 @@ SPOOLRAIL_CONNECTION=rabbitmq
 
 Use a short, stable identifier for the application. Keep it independent of `APP_NAME` because changing the prefix requires migrating subscriptions. It must contain at most 24 characters (letters, digits, hyphens, and underscores are allowed).
 
-Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:sync` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](/subscriptions/#removing-resources).
+Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:ensure-topology` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](/subscriptions/#removing-resources).
 
 The ownership prefix is reserved for Spoolrail-managed subscription resources. Undeclared-subscription cleanup treats every resource in that namespace as application-owned and may delete it when no active subscription declares it.
 

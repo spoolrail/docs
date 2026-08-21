@@ -37,12 +37,12 @@ Subscription declarations are the source for managed broker topology. Publishing
 Run the synchronization command after deploying declaration changes:
 
 ```bash
-php artisan spoolrail:sync
+php artisan spoolrail:ensure-topology
 ```
 
 Spoolrail inspects every referenced managed connection before applying any changes, so an inspection failure changes nothing. A successful synchronization creates missing compatible resources and relationships, but does not convert, replace, or delete existing resources.
 
-Resource creation is not transactional. Spoolrail retries short-lived service and rate-limit failures. After a partially applied attempt, both recovery and a later `spoolrail:sync` run read current broker state and apply only what remains.
+Resource creation is not transactional. Spoolrail retries short-lived service and rate-limit failures. After a partially applied attempt, both recovery and a later `spoolrail:ensure-topology` run read current broker state and apply only what remains.
 
 A publisher-only application cannot establish a new topic by publishing. Synchronize at least one receiving application before enabling publication to that topic.
 
@@ -50,18 +50,18 @@ The [RabbitMQ](/rabbitmq/#managed-topology), [AWS SNS/SQS](/snssqs/#managed-topo
 
 ## Removing Resources
 
-Removing a subscription declaration does not delete its broker resource. The resource may continue collecting messages from its topic until you delete it. After draining its messages or deciding to discard them, delete undeclared subscription resources:
+Removing a subscription declaration leaves its broker subscription in place. It may continue collecting messages from the topic. After draining or deciding to discard those messages, delete the application-owned subscriptions that no longer have declarations:
 
 ```bash
-php artisan spoolrail:delete-undeclared-subscriptions
+php artisan spoolrail:prune-subscriptions
 ```
 
-Each deletion command targets the default Spoolrail connection unless you pass a configured name such as `--connection=events`. The command permanently deletes each undeclared receive resource, its buffered messages, and its routing from the topic.
+The command targets the default Spoolrail connection unless you pass a configured name such as `--connection=events`. It permanently deletes the matching subscriptions and removes their routing from topics. Any messages still waiting for delivery through them are discarded.
 
-After changing the application's ownership prefix, delete every subscription resource under the former prefix with:
+After changing the application's ownership prefix, delete all subscriptions associated with the former prefix:
 
 ```bash
-php artisan spoolrail:delete-undeclared-subscriptions --retired-prefix=warehouse-legacy
+php artisan spoolrail:prune-subscriptions --retired-prefix=warehouse-legacy
 ```
 
 You cannot pass the current ownership prefix to `--retired-prefix`.
@@ -201,11 +201,11 @@ Queue::failing(function (JobFailed $event): void {
 
 ## Moving a Subscription
 
-A RabbitMQ subscription queue remains on the connection and topic where it was created. To move a subscription without losing messages, replace it in stages:
+A subscription remains on the RabbitMQ connection and topic where it was created. To move it without losing messages, replace it in stages:
 
 1. Add a replacement subscription with a new name and the desired topic and Spoolrail connection. Keep the original subscription declared.
 2. Update publishers to use the replacement's topic and Spoolrail connection.
-3. Keep the original subscription running until its RabbitMQ queue is empty.
+3. Keep the original subscription running until it has no buffered messages.
 4. Remove the original declaration. If Laravel queue may still contain jobs for its name, add the mapping described in [Renaming a Subscription](#renaming-a-subscription) to the replacement at the same time.
 5. [Remove the original RabbitMQ subscription resource](#removing-resources) from its original connection.
 
@@ -223,6 +223,6 @@ Spoolrail::subscribe(
 
 The former name becomes reserved and cannot also be an active subscription.
 
-This mapping applies only to work already handed to Laravel queue. It does not move messages still buffered in the old RabbitMQ queue. Drain that queue with the old consumer, or decide to discard it, before running the subscription cleanup command.
+This mapping applies only to work already handed to Laravel queue. It does not move messages still buffered in the old subscription. Drain that subscription with the old consumer, or decide to discard it, before running the subscription cleanup command.
 
 Keep the mapping until every queued, delayed, retryable, in-flight, or failed Laravel job using the former name has completed or been discarded.
