@@ -58,6 +58,8 @@ php artisan spoolrail:prune-subscriptions
 
 The command targets the default Spoolrail connection unless you pass a configured name such as `--connection=events`. It permanently deletes the matching subscriptions and removes their routing from topics. Any messages still waiting for delivery through them are discarded.
 
+Before deleting anything, the command lists the resources it found and asks for confirmation. Use `--force` to skip the prompt in deliberate non-interactive runs; the command still prints the deletion plan.
+
 After changing the application's ownership prefix, delete all subscriptions associated with the former prefix:
 
 ```bash
