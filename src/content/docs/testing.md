@@ -2,6 +2,36 @@
 title: Testing
 ---
 
+## Testing a Publisher
+
+Call `Spoolrail::fake()` before exercising code that publishes messages. The fake records the topic, message type, payload, and headers without publishing to a transport, running subscribers, or writing outbox records:
+
+```php
+use Spoolrail\Spoolrail\Facades\Spoolrail;
+use Spoolrail\Spoolrail\Message;
+
+Spoolrail::fake();
+
+Spoolrail::publish(
+    'orders',
+    Message::make('order.created', ['order_id' => 42]),
+    ['trace-id' => 'trace-42'],
+);
+
+Spoolrail::assertPublished(
+    'orders',
+    'order.created',
+    fn (array $payload, array $headers): bool => $payload['order_id'] === 42
+        && $headers['trace-id'] === 'trace-42',
+);
+Spoolrail::assertPublished('orders', 'order.created', 1);
+Spoolrail::assertNotPublished('orders', 'order.cancelled');
+```
+
+The closure receives the payload and headers. Pass an integer as the third argument to assert the exact publication count. Use `Spoolrail::assertNothingPublished()` when the action should publish no messages.
+
+Use the fake for producer-side assertions. It does not run transport-portability validation or exercise publication mode, outbox transactions, or delivery guarantees. Use an unfaked `array` connection when a test depends on portability validation, routing, queue handoff, or handler behavior.
+
 ## Using the Array Connection
 
 The `array` connection keeps messages in memory for the current PHP process:
@@ -64,6 +94,8 @@ When a subscription uses an asynchronous queue connection:
 2. run `spoolrail` with the subscription name;
 3. run a Laravel queue worker for the selected connection and queue; and
 4. assert the handler's domain effect.
+
+## Integration Testing with Real Transports
 
 Use transport-backed integration tests when behavior depends on native acceptance, delivery, settlement, or topology. For AWS SNS/SQS tests, point a test connection at a local AWS-compatible endpoint such as MiniStack.
 
