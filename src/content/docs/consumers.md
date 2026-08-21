@@ -1,6 +1,5 @@
 ---
 title: Running Consumers
-description: Run, recover, deploy, and supervise Spoolrail consumers.
 ---
 
 ## Starting Consumers

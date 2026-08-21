@@ -1,6 +1,5 @@
 ---
 title: Testing
-description: Test Spoolrail publications and handlers with the array connection or broker integrations.
 ---
 
 ## Using the Array Connection

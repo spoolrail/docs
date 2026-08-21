@@ -1,6 +1,5 @@
 ---
 title: Subscriptions and Handlers
-description: Declare subscriptions, synchronize broker resources, and run message handlers through Laravel queue.
 ---
 
 ## Declaring Subscriptions

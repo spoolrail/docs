@@ -1,6 +1,5 @@
 ---
 title: Installation and Configuration
-description: Install Spoolrail and configure connections, ownership, and driver prerequisites.
 ---
 
 ## Requirements
@@ -27,14 +26,12 @@ The install command publishes `config/spoolrail.php` and creates `routes/subscri
 
 ## Application Environment
 
-Select the default connection and set a stable ownership prefix for subscription resources:
+Set a stable ownership prefix for subscription resources and select the default connection:
 
 ```dotenv
-SPOOLRAIL_CONNECTION=rabbitmq
 SPOOLRAIL_PREFIX=warehouse
+SPOOLRAIL_CONNECTION=rabbitmq
 ```
-
-`SPOOLRAIL_CONNECTION` names a connection from `config/spoolrail.php`. The bundled broker connections are `rabbitmq`, `snssqs`, and `pubsub`.
 
 `SPOOLRAIL_PREFIX` namespaces subscription resources owned by the application. Set it before consuming messages or managing subscriptions, and keep it stable. Publisher-only applications do not need it.
 
@@ -43,6 +40,8 @@ Use a short, stable identifier for the application. Keep it independent of `APP_
 Changing the prefix makes Spoolrail address different subscription resources. After you run `spoolrail:sync` to create them, resources under the old prefix remain subscribed and may keep collecting messages until you [remove them](/subscriptions/#removing-resources).
 
 The ownership prefix is reserved for Spoolrail-managed subscription resources. Undeclared-subscription cleanup treats every resource in that namespace as application-owned and may delete it when no active subscription declares it.
+
+`SPOOLRAIL_CONNECTION` names a connection from `config/spoolrail.php`. The bundled broker connections are `rabbitmq`, `snssqs`, and `pubsub`.
 
 ## Driver Prerequisites
 

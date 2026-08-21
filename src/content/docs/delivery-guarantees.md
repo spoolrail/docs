@@ -1,6 +1,5 @@
 ---
 title: Delivery Guarantees
-description: Understand what Spoolrail's once-and-ordered handoff guarantee covers and when a handler can still repeat.
 ---
 
 By default, Spoolrail delivers every published message <strong class="text-highlight">once</strong> and <strong class="text-highlight">in order</strong> to each subscription's Laravel queue. This guarantee covers ordinary publication and broker redeliveries.

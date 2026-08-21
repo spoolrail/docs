@@ -1,6 +1,5 @@
 ---
 title: Publishing Messages
-description: Create and publish Spoolrail messages, headers, and ordering keys.
 ---
 
 ## Creating a Message

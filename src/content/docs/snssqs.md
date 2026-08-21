@@ -1,6 +1,5 @@
 ---
 title: AWS SNS/SQS
-description: Configure AWS SNS/SQS delivery, FIFO ordering, batching, and managed topology.
 ---
 
 The AWS SNS/SQS driver publishes to Amazon SNS and gives every Spoolrail subscription its own Amazon SQS queue. FIFO topology is the default; standard topology is available per connection.
@@ -73,8 +72,9 @@ AWS publishes current per-group and regional limits in its [SNS message-group gu
 
 Set `'fifo' => false` to create unsuffixed standard topics and queues. Standard mode avoids FIFO's per-group throughput and sequencing constraints, but provides at-least-once, best-effort-order delivery instead of FIFO ordering.
 
-> [!NOTE]
-> In standard mode, ordering keys enable [fair-queue grouping](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-fair-queues.html), not ordering or deduplication.
+:::note
+In standard mode, ordering keys enable [fair-queue grouping](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-fair-queues.html), not ordering or deduplication.
+:::
 
 ### Moving from FIFO to Standard
 

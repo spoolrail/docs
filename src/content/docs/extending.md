@@ -1,6 +1,5 @@
 ---
 title: Custom Drivers
-description: Add a custom broker driver and optional topology management to Spoolrail.
 ---
 
 ## Registering a Driver

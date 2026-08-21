@@ -1,6 +1,5 @@
 ---
 title: Google Pub/Sub
-description: Configure Google Pub/Sub delivery, ordering, batching, and managed topology.
 ---
 
 The Google Pub/Sub driver publishes to a shared topic and gives every Spoolrail subscription its own pull subscription. Message ordering and exactly-once delivery are enabled by default and can be configured independently.
@@ -70,8 +69,9 @@ Pub/Sub preserves order within a key and region, independently for each subscrip
 
 When the application does not require guaranteed ordering, set `'message_ordering' => false` to favor higher publish availability and lower end-to-end latency.
 
-> [!NOTE]
-> You do not need to remove ordering keys from existing publication calls. Pub/Sub accepts the keys, but does not guarantee their delivery order for subscriptions with message ordering disabled.
+:::note
+You do not need to remove ordering keys from existing publication calls. Pub/Sub accepts the keys, but does not guarantee their delivery order for subscriptions with message ordering disabled.
+:::
 
 The `message_ordering` setting is fixed when a subscription is created. If `spoolrail:sync` finds an existing subscription with a different value, preflight fails before changing topology. Declare a replacement subscription with a new name, drain the original, and remove it through the normal [resource cleanup](/subscriptions/#removing-resources) workflow.
 

@@ -1,14 +1,12 @@
 ---
 title: Transactional Outbox
-description: Commit broker publications with database changes and run the outbox dispatcher.
 ---
 
-Spoolrail publishes directly to the selected broker connection by default. Enable the transactional outbox when a database change and its publication must commit or roll back together.
+Spoolrail publishes directly to the selected broker connection by default. Enable the transactional outbox when a database change and its publication must commit or roll back together. The policy applies to every Spoolrail publication in the application. Existing publishing code keeps using `Spoolrail::publish(...)`.
 
-> [!NOTE]
-> The transactional outbox is optional. It coordinates publication with a database transaction; it is not a general fault-tolerance measure. See [Publication Retries](/messages/#publication-retries) for handling transient broker failures.
-
-The policy applies to every Spoolrail publication in the application. Existing publishing code keeps using `Spoolrail::publish(...)` or `Spoolrail::connection(...)->publish(...)`.
+:::note
+The outbox is an optional transaction-coordination feature. If transient broker failures are your only concern, start with [publication retries](/messages/#publication-retries) rather than enabling the transactional outbox.
+:::
 
 ## Enabling the Outbox
 
@@ -83,8 +81,9 @@ Schedule::command('spoolrail:publish')
     ->withoutOverlapping();
 ```
 
-> [!NOTE]
-> When using sub-minute scheduled tasks, run `php artisan schedule:interrupt` after each deployment so the scheduler loads the new code on its next invocation.
+:::note
+When using sub-minute scheduled tasks, run `php artisan schedule:interrupt` after each deployment so the scheduler loads the new code on its next invocation.
+:::
 
 Each invocation works through the rows visible when it starts and then exits. Rows committed during the run wait for the next invocation.
 

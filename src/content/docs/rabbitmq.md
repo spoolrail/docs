@@ -1,6 +1,5 @@
 ---
 title: RabbitMQ
-description: Configure RabbitMQ connectivity, TLS, acknowledgments, and managed topology.
 ---
 
 The RabbitMQ driver publishes each topic to a fanout exchange and gives every Spoolrail subscription its own queue.
