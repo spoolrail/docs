@@ -24,9 +24,25 @@ php artisan spoolrail warehouse-orders
 
 Spoolrail hands each delivery to the subscription's configured Laravel queue, where the message handler runs.
 
+## Consumer Processes
+
+When `spoolrail` starts, it divides the selected connection's subscriptions evenly among `consumer.processes` child processes. The setting defaults to `1`, so one child runs every subscription on that connection:
+
+```php
+'consumer' => [
+    'processes' => 1,
+    'idle_wait_milliseconds' => 100,
+    'exception_cooldown' => 300,
+],
+```
+
+A single child can wait for broker activity across many subscriptions at the same time. When several subscriptions have messages ready, it hands one message at a time to Laravel queue and rotates between them, giving each ready subscription a turn. Each additional child is another full Laravel process. Increase `consumer.processes` if subscription backlogs are not clearing quickly enough.
+
+`idle_wait_milliseconds` controls how long an idle consumer may wait before checking again. Broker activity may wake it sooner. It is not a broker-request timeout and normally should remain `100`.
+
 ## Message Delivery
 
-Spoolrail considers a broker delivery complete only after the selected Laravel queue accepts it. If the queue handoff fails or the consumer stops first, the message remains unacknowledged and the broker will redeliver it.
+Spoolrail considers a broker delivery complete only after the selected Laravel queue accepts it. If the queue handoff fails while the transport remains usable, Spoolrail promptly releases the delivery for redelivery. If settlement is uncertain or the process stops first, broker recovery makes the delivery available again.
 
 Spoolrail retains each successful queue handoff for the configured idempotency window. If an acknowledgment does not reach the broker and the broker redelivers the message during that window, Spoolrail acknowledges the redelivery without adding another Laravel job.
 
@@ -38,13 +54,7 @@ Handoff idempotency uses locks from the Laravel cache store configured by `spool
 
 If one subscription stops, the others continue. Spoolrail restarts the affected subscription after 1, 5, 15, 30, then 60 seconds, and uses 60-second delays for further restarts. After the subscription has remained active for 60 seconds, the delay sequence resets and Spoolrail writes a recovery message at `notice` level, even if no messages arrived during that time.
 
-Spoolrail reports subscription failures through Laravel's exception handler, including the original cause. By default, it reports each failure category at most once every five minutes. Applications can change the cooldown in `config/spoolrail.php`:
-
-```php
-'consumer' => [
-    'exception_cooldown' => 300,
-],
-```
+Spoolrail reports subscription failures through Laravel's exception handler, including the original cause. By default, it reports each failure category at most once every five minutes. Change `exception_cooldown` in the consumer configuration shown above when another interval is needed.
 
 ## Deploying Consumers
 
@@ -55,6 +65,8 @@ php artisan spoolrail:terminate
 ```
 
 The command requests termination for every Spoolrail consumer on that server and returns immediately. The configured process monitor then starts them from the active release. Run the command on each server during a rolling deployment.
+
+Each child stops starting receives and finishes only batches already returned before shutdown. A receive that returns afterward is released. The parent allows ten seconds for handoff and settlement before forcefully stopping an unresponsive child, leaving unsettled work to broker recovery.
 
 `spoolrail:terminate` uses Laravel's default cache to reach running consumers. The deployment command and running consumers must use the same cache store and prefix so the termination request reaches them.
 

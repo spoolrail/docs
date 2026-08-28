@@ -62,7 +62,7 @@ Publish `config/spoolrail.php` to configure the complete RabbitMQ connection:
 ],
 ```
 
-`connection_timeout` and `heartbeat` control AMQP connections. `prefetch` limits the unacknowledged messages held by each consumer. `publisher_confirm_timeout` controls how long each publication attempt waits for broker confirmation.
+`connection_timeout` and `heartbeat` control AMQP connections. `prefetch` limits the unacknowledged messages held for each subscription while subscriptions share a consumer process. `publisher_confirm_timeout` controls how long each publication attempt waits for broker confirmation.
 
 The Management URL may point to the server root or end in `/api`. It must use HTTP or HTTPS and cannot contain embedded credentials, a query string, or a fragment.
 
