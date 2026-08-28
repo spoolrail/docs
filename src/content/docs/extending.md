@@ -55,8 +55,12 @@ Custom drivers implement `Driver`:
 
 ```php
 use Closure;
-use Spoolrail\Spoolrail\TransportContext;
+use Spoolrail\Spoolrail\Delivery;
+use Throwable;
 
+/**
+ * @template TReceipt
+ */
 interface Driver
 {
     /**
@@ -70,9 +74,36 @@ interface Driver
     ): void;
 
     /**
-     * @param Closure(string, TransportContext): void $handoff
+     * @param Closure(list<Delivery<TReceipt>>): void $received
+     * @param Closure(Throwable): void $fail
      */
-    public function consume(string $subscription, Closure $handoff): void;
+    public function receive(
+        string $subscription,
+        Closure $received,
+        Closure $fail,
+    ): void;
+
+    /**
+     * @param Delivery<TReceipt> $delivery
+     * @param Closure(): void $acknowledged
+     * @param Closure(Throwable): void $fail
+     */
+    public function acknowledge(
+        Delivery $delivery,
+        Closure $acknowledged,
+        Closure $fail,
+    ): void;
+
+    /**
+     * @param Delivery<TReceipt> $delivery
+     * @param Closure(): void $released
+     * @param Closure(Throwable): void $fail
+     */
+    public function release(
+        Delivery $delivery,
+        Closure $released,
+        Closure $fail,
+    ): void;
 }
 ```
 
@@ -90,11 +121,60 @@ Pass the transport failure as the previous exception.
 
 Each `publish` call is one broker attempt. Spoolrail retries the driver call according to `spoolrail.publisher_retries` and does not retry a `Rejected` outcome.
 
-`consume` must retain ownership of a delivery while calling `$handoff($body, $transportContext)`. The context is a `TransportContext` with non-empty `driver`, `connectionName`, `topic`, and `subscription` values and a string-keyed native `headers` array. Use an empty header array when the delivery has none.
+Each consumption method starts one transport operation and then invokes exactly one supplied outcome closure exactly once. It may do that before returning or later. Returning only means that the operation was accepted.
 
-Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport, and set them to `null` when the transport does not expose those facts. Set `redelivered` to the transport's delivery evidence or `null` when it cannot report that evidence. Set `orderingKey` from the delivery's native group identifier when available; otherwise use `null`. Do not place acknowledgement, receipt, or settlement handles in the context.
+`receive` represents one receive attempt and reports a `list<Delivery>`. An empty list is a successful result. Spoolrail decides when the subscription receives again. Keep the native receipt in `Delivery::$receipt`; Spoolrail returns the same delivery to `acknowledge` or `release` without exposing that receipt to application handlers.
 
-Settle the delivery only when the callback returns normally. If it throws, make the delivery available again, stop consuming, and propagate the same exception. If settling the delivery fails after the handoff returns, stop consuming and report the failure.
+Bind the receipt type once so PHPStan can infer it inside settlement methods:
+
+```php
+/** @implements Driver<AcmeReceipt> */
+class AcmeDriver implements Driver
+{
+    // ...
+}
+```
+
+Set `body` to the unchanged encoded message. Use `headers` for string-keyed native application headers. Set `transportMessageId` and `transportPublishedAt` only from values assigned by the transport. Set `redelivered` to the transport's delivery evidence or `null` when unknown, and set `orderingKey` from the native grouping identifier when available. Routing identity is already known from the subscription declaration and does not belong in the delivery or receipt.
+
+`acknowledge` positively settles a delivery. `release` makes it eligible for redelivery as soon as the transport permits; it must not add delay or retry policy. Invoke `$fail($exception)` only for a failure confined to that operation and subscription. After `$fail`, the driver must remain usable by other subscriptions and later operations. Throw instead when the connection, reactor, or other shared driver state is no longer usable so Spoolrail can restart the whole child.
+
+A synchronous driver completes inline through the same callbacks:
+
+```php
+public function receive(string $subscription, Closure $received, Closure $fail): void
+{
+    try {
+        $native = $this->client->receive($subscription);
+        $deliveries = $native === null ? [] : [new Delivery(
+            body: $native->body,
+            receipt: $native->receipt,
+        )];
+    } catch (Throwable $exception) {
+        $fail($exception);
+
+        return;
+    }
+
+    $received($deliveries);
+}
+```
+
+When operations can remain pending after these methods return, implement `CanWaitForConsumerIo`:
+
+```php
+use Spoolrail\Spoolrail\Contracts\CanWaitForConsumerIo;
+
+class AcmeDriver implements CanWaitForConsumerIo, Driver
+{
+    public function waitForConsumerIo(): void
+    {
+        $this->reactor->tick();
+    }
+}
+```
+
+Start asynchronous requests from `receive`, `acknowledge`, and `release`, attach the supplied outcome closures, and return. `waitForConsumerIo` gives the shared reactor one bounded opportunity to progress any subscription's pending I/O. Configure its wait from `spoolrail.consumer.idle_wait_milliseconds`; do not reinterpret that value as a broker-request timeout. Throw from `waitForConsumerIo` if the reactor itself fails.
 
 ## Closing Connections
 

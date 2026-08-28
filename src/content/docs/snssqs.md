@@ -48,13 +48,13 @@ Publish `config/spoolrail.php` to configure the bundled connection:
 
 Set `SPOOLRAIL_AWS_ENDPOINT` when using a compatible local service such as MiniStack. Leave it undefined when connecting to AWS.
 
-SQS consumers long-poll for 20 seconds, so any custom `request_timeout` value must be greater than 20.
+SQS receives long-poll for 20 seconds, so any custom `request_timeout` value must be greater than 20.
 
 ### Receive Batch Size
 
 `receive_batch_size` controls how many messages Spoolrail fetches from the SQS queue per receive. Fetching several messages at once avoids a broker round trip for each message. It defaults to `10`, the AWS maximum. Set it to `1` for one-at-a-time receives. SQS returns up to the configured number without waiting for a full batch to accumulate. Spoolrail hands returned messages to Laravel queue one at a time.
 
-After SQS returns a batch, the visibility timeout controls how long an undeleted message remains unavailable for another receive from that subscription's queue. The default `visibility_timeout` is `30` seconds. See AWS's [`VisibilityTimeout` attribute documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html) for supported values. Spoolrail deletes each message after handing it to Laravel queue, so later worker execution does not use this time. Increase the timeout when queue handoff may take longer, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:ensure-topology` after changing it.
+After SQS returns a batch, the visibility timeout controls how long an undeleted message remains unavailable for another receive from that subscription's queue. The default `visibility_timeout` is `30` seconds. See AWS's [`VisibilityTimeout` attribute documentation](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html) for supported values. Spoolrail deletes each message after handing it to Laravel queue, so later worker execution does not use this time. Later messages in the batch may wait while Spoolrail takes turns with other ready subscriptions. If this wait approaches the timeout, either reduce `receive_batch_size` or increase [`consumer.processes`](/consumers/#consumer-processes) to shorten it. Alternatively, increase the timeout to allow more time, but expect a longer redelivery delay after a consumer failure. Run `spoolrail:ensure-topology` after changing it.
 
 ## FIFO Mode and Ordering
 
@@ -113,6 +113,7 @@ Runtime consumption requires:
 sqs:GetQueueUrl
 sqs:ReceiveMessage
 sqs:DeleteMessage
+sqs:ChangeMessageVisibility
 ```
 
 Topology changes require:
