@@ -117,7 +117,7 @@ export default defineConfig({
         },
         {
           label: "Advanced",
-          items: ["testing", "extending"],
+          items: ["events", "testing", "extending"],
         },
       ],
     }),
