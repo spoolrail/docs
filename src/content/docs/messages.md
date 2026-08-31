@@ -77,6 +77,33 @@ $published = Spoolrail::publish(
 
 Use lowercase kebab-case keys and string values. Publications accept up to 10 headers, the AWS SNS-to-SQS portability limit.
 
+### Global Headers
+
+Register a single application-wide callback when every publication needs common headers, such as correlation identifiers, tenant context, or distributed tracing context (for example, OpenTelemetry). Add it to a service provider's `boot` method:
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+use Spoolrail\Spoolrail\Facades\Spoolrail;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        Spoolrail::transformHeadersUsing(function (array $headers): array {
+            $headers['application'] = config('app.name');
+
+            return $headers;
+        });
+    }
+}
+```
+
+The callback receives the headers passed to `publish` and returns the complete header map, so preserve any existing headers that should remain.
+
 ## Ordering Keys
 
 Use an ordering key to split a topic into independent groups. Different groups may progress in parallel while messages within each group stay ordered:
@@ -122,29 +149,3 @@ $message = Message::make('order.created', ['order_id' => 42]);
 Spoolrail::publish('orders', $message);
 Spoolrail::publish('orders', $message); // Same message ID
 ```
-
-## Transport Context
-
-A message received by a handler has an immutable `TransportContext` describing that delivery:
-
-```php
-$message->transport?->driver;
-$message->transport?->connectionName;
-$message->transport?->topic;
-$message->transport?->subscription;
-$message->transport?->headers;
-$message->transport?->transportMessageId;
-$message->transport?->transportPublishedAt;
-$message->transport?->redelivered;
-$message->transport?->orderingKey;
-```
-
-`driver`, `connectionName`, `topic`, `subscription`, and `headers` are always present on received messages. `headers` is an `array<string, mixed>` containing the complete native header collection exposed by the transport, including transport-added values. It is empty when the delivery has no headers and may contain more than 10 entries or values other than strings.
-
-`transportMessageId`, `transportPublishedAt`, `redelivered`, and `orderingKey` are nullable because a transport may not report those facts. The transport message ID is separate from the logical `$message->id`, and the transport publication time is separate from the application-side `$message->publishedAt`.
-
-RabbitMQ and the `array` driver report `null` for the transport-assigned ID, publication time, and ordering key. They report redelivery evidence when available. AWS reports the SQS message ID, sent time, approximate redelivery evidence, and native message group. Google Pub/Sub reports the Pub/Sub message ID, service publication time, delivery-attempt evidence when available, and ordering key.
-
-`redelivered` is diagnostic context. `true` means the transport marked this source delivery as repeated, `false` means it did not, and `null` means the transport cannot say. It does not count Laravel queue attempts or establish whether the handler has already completed.
-
-Laravel queue retries retain the context captured during the successful handoff from the broker to Laravel queue. A source transport redelivery creates a fresh context for the new delivery. Context never contains an acknowledgement or receipt handle and cannot be used by handlers to settle the source delivery.
