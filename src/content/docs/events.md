@@ -8,8 +8,6 @@ Spoolrail dispatches synchronous Laravel events while publishing messages and ha
 
 Register the events you need in a service provider's `boot` method:
 
-> `MessageStaging`, `MessageStaged`, and `MessageStagingFailed` cover storing a publication in the transactional outbox.
-
 ```php
 <?php
 
@@ -31,30 +29,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Event::listen(function (MessagePublishing $event): void {
-            // $event->connectionName
-            // $event->topic
-            // $event->message
-            // $event->headers
-            // $event->orderingKey
-        });
-
-        Event::listen(function (MessagePublished $event): void {
-            // $event->connectionName
-            // $event->topic
-            // $event->message
-            // $event->headers
-            // $event->orderingKey
-        });
-
-        Event::listen(function (MessagePublicationFailed $event): void {
-            // $event->connectionName
-            // $event->topic
-            // $event->message
-            // $event->headers
-            // $event->orderingKey
-            // $event->exception
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | Storing a message for publication when the transactional outbox is enabled
+        |--------------------------------------------------------------------------
+        */
 
         Event::listen(function (MessageStaging $event): void {
             // $event->connectionName
@@ -82,16 +61,71 @@ class AppServiceProvider extends ServiceProvider
             // $event->exception
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | Publishing a message to a transport
+        |--------------------------------------------------------------------------
+        */
+
+        Event::listen(function (MessagePublishing $event): void {
+            // $event->connectionName
+            // $event->topic
+            // $event->message
+            // $event->headers
+            // $event->orderingKey
+        });
+
+        Event::listen(function (MessagePublished $event): void {
+            // $event->connectionName
+            // $event->topic
+            // $event->message
+            // $event->headers
+            // $event->orderingKey
+        });
+
+        Event::listen(function (MessagePublicationFailed $event): void {
+            // $event->connectionName
+            // $event->topic
+            // $event->message
+            // $event->headers
+            // $event->orderingKey
+            // $event->exception
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Handing a received message to Laravel Queue
+        |--------------------------------------------------------------------------
+        */
+
         Event::listen(function (MessageConsuming $event): void {
             // $event->message
+            // $event->message->transport?->connectionName
+            // $event->message->transport?->topic
+            // $event->message->transport?->subscription
+            // $event->message->transport?->headers
+            // $event->message->transport?->orderingKey
+            // $event->message->transport?->...
         });
 
         Event::listen(function (MessageConsumed $event): void {
             // $event->message
+            // $event->message->transport?->connectionName
+            // $event->message->transport?->topic
+            // $event->message->transport?->subscription
+            // $event->message->transport?->headers
+            // $event->message->transport?->orderingKey
+            // $event->message->transport?->...
         });
 
         Event::listen(function (MessageConsumptionFailed $event): void {
             // $event->message
+            // $event->message->transport?->connectionName
+            // $event->message->transport?->topic
+            // $event->message->transport?->subscription
+            // $event->message->transport?->headers
+            // $event->message->transport?->orderingKey
+            // $event->message->transport?->...
             // $event->exception
         });
     }
