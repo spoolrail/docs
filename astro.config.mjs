@@ -77,9 +77,6 @@ export default defineConfig({
         src: spoolrailMark,
         alt: "Spoolrail",
       },
-      editLink: {
-        baseUrl: "https://github.com/spoolrail/docs/edit/main/",
-      },
       social: [
         {
           icon: "github",
