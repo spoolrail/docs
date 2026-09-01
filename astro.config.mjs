@@ -94,6 +94,9 @@ export default defineConfig({
             { label: "Overview", link: "/" },
             { label: "Documentation", link: "/installation/" },
           ],
+          docs: {
+            showMarkdownActions: false,
+          },
         }),
       ],
       sidebar: [
