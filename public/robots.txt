@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://spoolrail.com/sitemap-index.xml
+Sitemap: https://www.spoolrail.com/sitemap-index.xml
