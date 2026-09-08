@@ -193,7 +193,7 @@ class ReserveInventoryHandler implements MessageHandler
 
 Spoolrail supports `tries`, `backoff`, `maxExceptions`, `timeout`, and `failOnTimeout` properties; `tries()`, `backoff()`, and `retryUntil()` methods; and a `middleware(Message $message)` method. Laravel 13 queue policy attributes are also supported.
 
-Prefer methods when attempts or backoff are dynamic. Spoolrail captures queue policy and middleware when it hands the message to Laravel queue, before the handler constructor runs. Changes apply only to messages handed off afterward; existing queued jobs keep their captured policy.
+Prefer methods when attempts or backoff are dynamic. Spoolrail captures queue policy when it hands the message to Laravel queue, before the handler constructor runs. Changes apply only to messages handed off afterward; existing queued jobs keep their captured policy. Middleware is constructed for each worker attempt using the current handler code, so changes apply to pending jobs too.
 
 ## Handling Terminal Failures
 
