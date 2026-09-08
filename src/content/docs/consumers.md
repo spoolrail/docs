@@ -52,11 +52,11 @@ Handoff idempotency uses locks from the Laravel cache store configured by `spool
 
 ## Invalid Messages
 
-Spoolrail validates the envelope before handing a message to Laravel queue. It discards only deliveries that cannot represent a message, such as broken JSON or a plain JSON string, and logs an error. Other invalid messages remain in the broker and are retried by default.
+Spoolrail validates the envelope before handing a message to Laravel queue. It discards deliveries that cannot represent a message, such as broken JSON or a plain JSON string, and logs an error.
 
-For example, a producer implementing the envelope format itself, such as a service written in another language, might send `published_at` as a Unix timestamp instead of a timestamp string. Those messages keep failing validation even after the producer is fixed, because their contents have not changed.
+Envelopes with missing or invalid fields remain in the broker for retry by default. For example, a producer might send messages with `published_at` as an integer Unix timestamp instead of a timestamp string. Fixing the producer prevents new invalid messages, but those already in the broker still contain invalid timestamps and keep failing validation on retry.
 
-To discard a specific invalid message rather than let repeated retries hold up the subscription, register a callback in a service provider's `boot` method:
+If you decide to discard those messages, register a callback in a service provider's `boot` method:
 
 ```php
 use Spoolrail\Spoolrail\Facades\Spoolrail;
@@ -65,7 +65,7 @@ use Spoolrail\Spoolrail\TransportContext;
 Spoolrail::discardInvalidMessagesWhen(
     fn (array $envelope, TransportContext $transport): bool =>
         $transport->subscription === 'warehouse-orders'
-        && ($envelope['id'] ?? null) === '0197b423-7de0-7451-9668-63b82f630180',
+        && is_int($envelope['published_at'] ?? null),
 );
 ```
 
