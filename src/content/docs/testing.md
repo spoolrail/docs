@@ -106,4 +106,4 @@ GOOGLE_CLOUD_PROJECT=spoolrail-test
 PUBSUB_EMULATOR_HOST=127.0.0.1:8085
 ```
 
-Leave the Pub/Sub connection's `credentials` setting `null`. Spoolrail follows `PUBSUB_EMULATOR_HOST` without requiring emulator credentials or a custom endpoint. Use the emulator to test publication, pull delivery, acknowledgment, fanout, and topology. It cannot verify production ordering or exactly-once guarantees.
+Leave the Pub/Sub connection's `endpoint` and `credentials` settings `null`. Spoolrail uses `PUBSUB_EMULATOR_HOST` to connect to the emulator. Use the emulator to test publication, pull delivery, acknowledgment, fanout, and topology. It cannot verify production ordering or exactly-once guarantees.
