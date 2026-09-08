@@ -42,13 +42,34 @@ A single child can wait for broker activity across many subscriptions at the sam
 
 ## Message Delivery
 
-Spoolrail considers a broker delivery complete only after the selected Laravel queue accepts it. If the queue handoff fails while the transport remains usable, Spoolrail promptly releases the delivery for redelivery. If settlement is uncertain or the process stops first, broker recovery makes the delivery available again.
+Spoolrail acknowledges a message after the selected Laravel queue accepts it. If the queue handoff fails while the transport remains usable, Spoolrail promptly releases the delivery for redelivery. If settlement is uncertain or the process stops first, broker recovery makes the delivery available again.
 
 Spoolrail retains each successful queue handoff for the configured idempotency window. If an acknowledgment does not reach the broker and the broker redelivers the message during that window, Spoolrail acknowledges the redelivery without adding another Laravel job.
 
 Once Laravel queue accepts the message, Laravel queue owns handler execution, retries, timeouts, and terminal failure.
 
 Handoff idempotency uses locks from the Laravel cache store configured by `spoolrail.handoff_idempotency.cache_store`. Use a `database` or `redis` store in production because they provide atomic lock release and automatically clean up expired locks.
+
+## Invalid Messages
+
+Spoolrail validates the envelope before handing a message to Laravel queue. It discards only deliveries that cannot represent a message, such as broken JSON or a plain JSON string, and logs an error. Other invalid messages remain in the broker and are retried by default.
+
+For example, a producer implementing the envelope format itself, such as a service written in another language, might send `published_at` as a Unix timestamp instead of a timestamp string. Those messages keep failing validation even after the producer is fixed, because their contents have not changed.
+
+To discard a specific invalid message rather than let repeated retries hold up the subscription, register a callback in a service provider's `boot` method:
+
+```php
+use Spoolrail\Spoolrail\Facades\Spoolrail;
+use Spoolrail\Spoolrail\TransportContext;
+
+Spoolrail::discardInvalidMessagesWhen(
+    fn (array $envelope, TransportContext $transport): bool =>
+        $transport->subscription === 'warehouse-orders'
+        && ($envelope['id'] ?? null) === '0197b423-7de0-7451-9668-63b82f630180',
+);
+```
+
+Only an explicit `true` discards the delivery. Returning `false` or nothing, or throwing, leaves it retryable. The callback only handles envelope validation failures. Queue handoff and handler errors follow their normal recovery paths. [Restart consumers](#deploying-consumers) after changing the callback.
 
 ## Subscription Recovery
 
